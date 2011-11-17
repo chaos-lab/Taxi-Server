@@ -1,0 +1,10 @@
+{
+    "name": "taxi-server"
+  , "description": "web server of taxi"
+  , "version": "0.0.1"
+  , "dependencies": {
+        "express": "2.5.0"
+      , "mongoose": "2.2.0"
+      , "coffee-script": "1.1.2"
+    }
+}
