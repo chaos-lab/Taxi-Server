@@ -1,6 +1,6 @@
 module.exports = config =
   webserver:
-    port  : 9000
+    port  : 80
 
   database:
     host  : 'localhost'
