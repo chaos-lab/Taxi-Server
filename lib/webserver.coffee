@@ -60,6 +60,7 @@ app.post '/driver/signup', (req, res) ->
   # TODO : password should be hashed
   if req.json_data.phone_number && req.json_data.password && req.json_data.nickname && req.json_data.car_number
     drivers[req.json_data.phone_number] = req.json_data
+    drivers[req.json_data.phone_number].messages = []
     res.json { status: 0 }
   else
     res.json { status: 1 }
@@ -105,6 +106,7 @@ app.post '/passenger/signup', (req, res) ->
   # TODO : password should be hashed
   if req.json_data.phone_number && req.json_data.password && req.json_data.nickname
     passengers[req.json_data.phone_number] = req.json_data
+    passengers[req.json_data.phone_number].messages = []
     res.json { status: 0 }
   else
     res.json { status: 1 }
