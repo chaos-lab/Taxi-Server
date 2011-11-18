@@ -93,7 +93,6 @@ app.get '/driver/refresh', restrict_to_driver, (req, res) ->
 
 app.post '/driver/message', restrict_to_driver, (req, res) ->
   if req.current_user.phone_number == req.json_data.from && passengers[req.json_data.to]
-    passengers[req.json_data.to].messages = [] unless passengers[req.json_data.to].messages
     passengers[req.json_data.to].messages.push(req.json_data)
     res.json { status: 0 }
   else
@@ -149,7 +148,6 @@ app.post '/passenger/location/update', restrict_to_passenger, (req, res) ->
 
 app.post '/passenger/message', restrict_to_passenger, (req, res) ->
   if req.current_user.phone_number == req.json_data.from && drivers[req.json_data.to]
-    drivers[req.json_data.to].messages = [] unless drivers[req.json_data.to].messages
     drivers[req.json_data.to].messages.push(req.json_data)
     res.json { status: 0 }
   else
