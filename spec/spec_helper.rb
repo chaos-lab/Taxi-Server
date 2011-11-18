@@ -3,7 +3,7 @@ require 'json'
 require 'hashie'
 require 'rspec'
 
-SERVER_HOST = "http://127.0.0.1:9000"
+SERVER_HOST = "http://taxi.no.de"
 
 class Session
   attr_accessor :cookies, :phone_number, :nickname, :car_number, :latitude, :longitude
