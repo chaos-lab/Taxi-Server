@@ -1,0 +1,33 @@
+
+1. How to run
+
+   First install node.js: 
+
+     yum install nodejs
+
+   Install npm: 
+
+     curl http://npmjs.org/install.sh | sh
+
+   install packages: 
+
+     npm install
+
+   run: node server.js
+
+2. How to test
+
+   First start node.js:
+
+     node server.js
+
+   Install necessary gems(ensure ruby and bundler are installed): 
+
+     bundle install
+
+   run test: rake spec
+
+3. Next to do
+   (1) Add mongodb support
+   (2) Support one simple scenario
+
