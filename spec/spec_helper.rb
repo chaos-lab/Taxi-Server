@@ -3,7 +3,7 @@ require 'json'
 require 'hashie'
 require 'rspec'
 
-SERVER_HOST = "http://taxi.no.de"
+SERVER_HOST = "http://127.0.0.1:9000"
 
 class Session
   attr_accessor :cookies, :phone_number, :nickname, :car_number, :latitude, :longitude
@@ -13,9 +13,7 @@ class Session
   end
 
   def get(path, params = nil, &block)
-    puts @cookies
     RestClient.get "#{SERVER_HOST}#{path}", {:params => params, :cookies => @cookies}  do |response, request, result|
-      puts response.cookies
       yield response if block_given?
       @cookies.merge!(response.cookies)
       Hashie::Mash.new(JSON.parse(response.body))
@@ -23,9 +21,7 @@ class Session
   end
 
   def post(path, params = nil, &block)
-    puts @cookies
     RestClient.post "#{SERVER_HOST}#{path}", params, {:cookies => @cookies}  do |response, request, result|
-      puts response.cookies
       yield response if block_given?
       @cookies.merge!(response.cookies)
       Hashie::Mash.new(JSON.parse(response.body))
@@ -54,7 +50,6 @@ class Session
     @longitude = _longitude
     data = { "json_data" => { latitude: _latitude, longitude: _longitude }.to_json }
     res = post '/driver/location/update', data
-    puts res.inspect
     throw "update driver location failed" unless res.status == 0
     return res
   end
@@ -86,7 +81,6 @@ class Session
     @longitude = _longitude
     data = { "json_data" => { latitude: _latitude, longitude: _longitude }.to_json }
     res = post '/passenger/location/update', data
-    puts res.inspect
     throw "update passenger location failed" unless res.status == 0
     return res
   end
