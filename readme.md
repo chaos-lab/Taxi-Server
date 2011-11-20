@@ -13,7 +13,9 @@
 
      npm install
 
-   run: node server.js
+   run: 
+
+     node server.js
 
 # How to test
 
@@ -21,15 +23,13 @@
 
      node server.js
 
-   Install necessary gems(ensure ruby and bundler are installed): 
+   Install necessary gems(ensure ruby is installed): 
 
+     # unnecessary if bundler is already installed
+     gem install bundler
      bundle install
 
-   run test: rake spec
+   run test: 
 
-# Next to do
-
-  - Add mongodb support
-
-  - Support one simple scenario
+     rake spec
 
