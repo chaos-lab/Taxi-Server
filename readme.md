@@ -1,5 +1,5 @@
 
-1. How to run
+# How to run
 
    First install node.js: 
 
@@ -15,7 +15,7 @@
 
    run: node server.js
 
-2. How to test
+# How to test
 
    First start node.js:
 
@@ -27,7 +27,9 @@
 
    run test: rake spec
 
-3. Next to do
-   (1) Add mongodb support
-   (2) Support one simple scenario
+# Next to do
+
+  - Add mongodb support
+
+  - Support one simple scenario
 
