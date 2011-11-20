@@ -35,6 +35,12 @@ describe 'driver' do
     res.status.should == 1
   end
 
+  it "should be unable to signin with inexistent account" do
+    data = { "json_data" => { phone_number: "xxxx", password: "abcd234" }.to_json }
+    res = @driver.post '/driver/signin', data
+    res.status.should == 1
+  end
+
   it "should be able to signin with correct credentials" do
     data = { "json_data" => { phone_number: "driver1", password: "123456" }.to_json }
     res = @driver.post '/driver/signin', data

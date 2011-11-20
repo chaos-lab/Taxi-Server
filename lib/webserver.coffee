@@ -74,7 +74,7 @@ app.post '/driver/signup', (req, res) ->
     res.json { status: 1 }
 
 app.post '/driver/signin', (req, res) ->
-  if req.json_data.phone_number && req.json_data.password
+  if req.json_data.phone_number && req.json_data.password && drivers[req.json_data.phone_number]
      current_user = drivers[req.json_data.phone_number]
      password = crypto.createHmac('sha1', current_user.salt).update(req.json_data.password).digest('hex')
 
@@ -86,7 +86,7 @@ app.post '/driver/signin', (req, res) ->
      else
        res.json { status: 1 }
   else
-    res.json { status: 2 }
+    res.json { status: 1 }
 
 app.post '/driver/signout', restrict_to_driver, (req, res) ->
   req.current_user.status = 0
@@ -124,7 +124,7 @@ app.post '/passenger/signup', (req, res) ->
     res.json { status: 1 }
 
 app.post '/passenger/signin', (req, res) ->
-  if req.json_data.phone_number && req.json_data.password
+  if req.json_data.phone_number && req.json_data.password && passengers[req.json_data.phone_number]
      current_user = passengers[req.json_data.phone_number]
      password = crypto.createHmac('sha1', current_user.salt).update(req.json_data.password).digest('hex')
 

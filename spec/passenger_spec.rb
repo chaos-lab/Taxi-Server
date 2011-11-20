@@ -29,6 +29,12 @@ describe 'passenger' do
     res.status.should == 1
   end
 
+  it "should be unable to signin with inexistent account" do
+    data = { "json_data" => { phone_number: "xxxx", password: "abcd234" }.to_json }
+    res = @passenger.post '/passenger/signin', data
+    res.status.should == 1
+  end
+
   it "should be unable to signin with incorrect credentials" do
     data = { "json_data" => { phone_number: "passenger1", password: "abcd234" }.to_json }
     res = @passenger.post '/passenger/signin', data
