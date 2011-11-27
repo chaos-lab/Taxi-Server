@@ -19,11 +19,11 @@ app.start = ->
 ######################################################
 app.configure ->
   # session support
-  app.use(express.logger())
   app.use(express.bodyParser())
   app.use(express.cookieParser())
   app.use(express.session({ secret: "keyboard cat" }))
 
+  app.use(express.logger())
   app.use express.errorHandler
     dumpExceptions: true
     showStack : true
