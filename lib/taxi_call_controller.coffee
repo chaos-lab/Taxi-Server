@@ -23,4 +23,4 @@ class TaxiCallController
   
   complete: (req, res) ->
 
-exports.TaxiCallController = TaxiCallController
+module.exports = TaxiCallController

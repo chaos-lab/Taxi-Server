@@ -15,13 +15,13 @@ Service = require('./service')
 ######################################################
 # controllers
 ######################################################
-DriverController = require('./driver_controller').DriverController
+DriverController = require('./driver_controller')
 driver_controller = new DriverController()
 
-PassengerController = require('./passenger_controller').PassengerController
+PassengerController = require('./passenger_controller')
 passenger_controller = new PassengerController()
 
-TaxiCallController = require('./taxi_call_controller').TaxiCallController
+TaxiCallController = require('./taxi_call_controller')
 taxi_call_controller = new TaxiCallController()
 
 ######################################################
@@ -60,8 +60,8 @@ app.use (req, res, next) ->
   if req.param("json_data")
     req.json_data = JSON.parse(req.param("json_data"))
 
-  if req.session.phone_number
-    User.collection.findOne { phone_number: req.session.phone_number }, {}, (err, doc)->
+  if req.session.user_id
+    User.collection.findOne { _id: req.session.user_id }, {}, (err, doc)->
       req.current_user = doc
       next()
   else
