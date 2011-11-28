@@ -1,6 +1,6 @@
 require('coffee-script')
 
 global.config = require('./config')
-webapp = require('./lib/webserver')
+webapp = require('./webserver')
 webapp.start()
 

@@ -9,19 +9,19 @@ server = new mongodb.Server(config.database.host, config.database.port, {})
 ######################################################
 # initiate models
 ######################################################
-User = require('./user')
-Service = require('./service')
+User = require('./models/user')
+Service = require('./models/service')
 
 ######################################################
 # controllers
 ######################################################
-DriverController = require('./driver_controller')
+DriverController = require('./controllers/driver_controller')
 driver_controller = new DriverController()
 
-PassengerController = require('./passenger_controller')
+PassengerController = require('./controllers/passenger_controller')
 passenger_controller = new PassengerController()
 
-TaxiCallController = require('./taxi_call_controller')
+TaxiCallController = require('./controllers/taxi_call_controller')
 taxi_call_controller = new TaxiCallController()
 
 ######################################################
