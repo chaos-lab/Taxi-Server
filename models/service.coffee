@@ -8,16 +8,15 @@ module.exports = Service =
   setup: (db) ->
     this.collection = new mongodb.Collection(db, 'services')
     this.collection.ensureIndex {driver: 1}, (err, name)->
-      console.log("Index #{name} created.")
     this.collection.ensureIndex {passenger: 1}, (err, name)->
-      console.log("Index #{name} created.")
     this.collection.ensureIndex {key: 1}, (err, name)->
-      console.log("Index #{name} created.")
 
-  create: (json) ->
+  create: (json, fn) ->
     json.created_at = new Date
     json.updated_at = new Date
-    this.collection.insert(json)
+    this.collection.insert json, (err, docs) ->
+      doc = if docs then docs[0] else null
+      fn(err, doc) if fn
 
   update: (phone, json) ->
 

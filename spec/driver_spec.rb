@@ -60,6 +60,12 @@ describe 'driver' do
     res.status.should == 0
   end
 
+  it "should be able to update state" do
+    data = { "json_data" => { state: 1 }.to_json }
+    res = @driver.post '/driver/taxi/update', data
+    res.status.should == 0
+  end
+
   it "should be able to refresh" do
     res = @driver.get '/driver/refresh'
     res.status.should == 0

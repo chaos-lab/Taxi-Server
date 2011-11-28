@@ -13,22 +13,21 @@ module.exports = User =
     this.collection = new mongodb.Collection(db, 'users')
 
     this.collection.ensureIndex {phone_number: 1}, {unique: true}, (err, name)->
-      console.log("Index #{name} created.")
     this.collection.ensureIndex {car_number: 1}, {sparse: true}, (err, name)->
-      console.log("Index #{name} created.")
     this.collection.ensureIndex {location: "2d"}, (err, name)->
-      console.log("Index #{name} created.")
     this.collection.ensureIndex {role: 1}, (err, name)->
-      console.log("Index #{name} created.")
 
-  create: (json) ->
+  create: (json, fn) ->
     json.created_at = new Date
     json.updated_at = new Date
-    this.collection.insert(json)
 
-  update: (phone, json) ->
-
-  find: (query, fn) ->
+    this.collection.insert json, (err, docs) ->
+      doc = if docs then docs[0] else null
+      fn(err, doc) if fn
 
   send: (phone, message) ->
+    this.collection.findOne { phone_number: phone }, {}, (err, doc) =>
+      return if !doc
+
+      this.collection.update { _id: doc._id }, { $set: {messages: doc.messages.push(message)} }
 
