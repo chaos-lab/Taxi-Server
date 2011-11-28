@@ -16,6 +16,7 @@ class PassengerController
     if req.json_data.phone_number && req.json_data.password && req.json_data.nickname
       req.json_data.messages = []
       req.json_data.role = 1
+      req.json_data.state = 0
       User.create(req.json_data)
       res.json { status: 0 }
     else
@@ -28,6 +29,7 @@ class PassengerController
   
          if req.json_data.password == doc.password && doc.role == 1
            req.session.user_id = doc.phone_number
+           req.session.last_active_time = new Date
            User.collection.update({_id: doc._id}, {$set: {state: 1}})
 
            self = { phone_number: doc.phone_number, nickname: doc.nickname }
@@ -46,9 +48,8 @@ class PassengerController
     User.collection.update({_id: req.current_user._id}, {$set: {location: req.json_data}})
     res.json { status: 0 }
   
-  # TODO add real-time status update. Use refresh as heart-beat
   refresh: (req, res) ->
+    User.fresh(req.current_user._id)
     res.json { status: 0, messages: req.current_user.messages }
-    User.collection.update({_id: req.current_user._id}, {$set: {messages: [], state: 2}})
-  
+
 module.exports = PassengerController

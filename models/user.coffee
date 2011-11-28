@@ -3,7 +3,7 @@
 mongodb = require('mongodb')
 
 # driver schema
-# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: {latitude: 23.2343, longitude: 126.343}, role: 1, created_at: Date, updated_at: Date, car_number: "xxxx" }
+# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: {latitude: 23.2343, longitude: 126.343}, role: 1, created_at: Date, updated_at: Date, car_number: "xxxx", taxi_state: 1 }
 
 # passenger
 # { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: {latitude: 23.2343, longitude: 126.343}, role: 2, created_at: Date, updated_at: Date }
@@ -30,4 +30,11 @@ module.exports = User =
       return if !doc
 
       this.collection.update { _id: doc._id }, { $set: {messages: doc.messages.push(message)} }
+
+  refresh: (id) ->
+    User.collection.findAndModify {_id: id}, [['_id','asc']], {$set: {messages: [], state: 2}}, {}, (err, doc) ->
+      clearTimeout(doc.timer) if doc.timer
+      callback = -> User.collection.update({_id: id}, {$set: {state: 1}})
+      timer = setTimeout(callback, 10000)
+      User.collection.update {_id: id}, {$set: {timer: timer}}
 
