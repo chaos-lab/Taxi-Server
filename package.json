@@ -1,7 +1,7 @@
 {
     "name": "taxi-server"
   , "description": "web server of taxi"
-  , "version": "0.0.1"
+  , "version": "0.3"
   , "dependencies": {
         "express": "2.5.0"
       , "mongodb": "0.9.6-23"

@@ -1,18 +1,43 @@
 express = require('express')
-crypto = require('crypto')
-_ = require('./underscore')
 
-drivers = {}
-passengers = {}
+######################################################
+# mongodb setup
+######################################################
+mongodb = require('mongodb')
+server = new mongodb.Server(config.database.host, config.database.port, {})
+
+######################################################
+# initiate models
+######################################################
+User = require('./user')
+Service = require('./service')
+
+######################################################
+# controllers
+######################################################
+DriverController = require('./driver_controller').DriverController
+driver_controller = new DriverController()
+
+PassengerController = require('./passenger_controller').PassengerController
+passenger_controller = new PassengerController()
+
+TaxiCallController = require('./taxi_call_controller').TaxiCallController
+taxi_call_controller = new TaxiCallController()
 
 ######################################################
 # create express
 ######################################################
 module.exports = app = express.createServer()
 app.start = ->
-  app.listen config.webserver.port, ->
-    addr = app.address()
-    console.log('app listening on http://' + addr.address + ':' + addr.port)
+  new mongodb.Db(config.database.db, server, {}).open (error, client)->
+    throw error if error
+
+    User.setup(client)
+    Service.setup(client)
+
+    app.listen config.webserver.port, ->
+      addr = app.address()
+      console.log('app listening on http://' + addr.address + ':' + addr.port)
 
 ######################################################
 # configurations
@@ -29,32 +54,18 @@ app.configure ->
     showStack : true
 
 ######################################################
-# utility functions
-######################################################
-make_salt = ->
-  return Math.round((new Date().valueOf() * Math.random())) + ''
-
-######################################################
 # preprocess json data
 ######################################################
 app.use (req, res, next) ->
   if req.param("json_data")
     req.json_data = JSON.parse(req.param("json_data"))
-  next()
 
-restrict_to_driver = (req, res, next) ->
-  if (req.session.user && req.session.user.type == "driver")
-    req.current_user = drivers[req.session.user.phone_number]
-    next()
+  if req.session.phone_number
+    User.collection.findOne { phone_number: req.session.phone_number }, {}, (err, doc)->
+      req.current_user = doc
+      next()
   else
-    res.json { status: 1, message: 'Unauthorized' }
-
-restrict_to_passenger = (req, res, next) ->
-  if (req.session.user && req.session.user.type == "passenger")
-    req.current_user = passengers[req.session.user.phone_number]
     next()
-  else
-    res.json { status: 1, message: 'Unauthorized' }
 
 # debug routes
 app.get '/', (req, res, next)->
@@ -63,117 +74,28 @@ app.get '/', (req, res, next)->
 ######################################################
 # driver routes
 ######################################################
-app.post '/driver/signup', (req, res) ->
-  if req.json_data.phone_number && req.json_data.password && req.json_data.nickname && req.json_data.car_number
-    req.json_data.salt = make_salt()
-    req.json_data.password = crypto.createHmac('sha1', req.json_data.salt).update(req.json_data.password).digest('hex')
-    req.json_data.messages = []
-    drivers[req.json_data.phone_number] = req.json_data
-    res.json { status: 0 }
-  else
-    res.json { status: 1 }
-
-app.post '/driver/signin', (req, res) ->
-  if req.json_data.phone_number && req.json_data.password && drivers[req.json_data.phone_number]
-     current_user = drivers[req.json_data.phone_number]
-     password = crypto.createHmac('sha1', current_user.salt).update(req.json_data.password).digest('hex')
-
-     if password == current_user.password
-       req.session.user = { phone_number: current_user.phone_number, type: "driver" }
-       current_user.status = 1
-       self = { phone_number: current_user.phone_number, nickname: current_user.nickname, car_number: current_user.car_number }
-       res.json { status: 0, self: self, message: "welcome, #{current_user.nickname}" }
-     else
-       res.json { status: 1 }
-  else
-    res.json { status: 1 }
-
-app.post '/driver/signout', restrict_to_driver, (req, res) ->
-  req.current_user.status = 0
-  req.session.destroy()
-  res.json { status: 0, message: "bye" }
-
-app.post '/driver/location/update', restrict_to_driver, (req, res) ->
-  req.current_user.location = req.json_data
-  res.json { status: 0 }
-
-# TODO add real-time status update. Use refresh as heart-beat
-app.get '/driver/refresh', restrict_to_driver, (req, res) ->
-  res.json { status: 0, messages: req.current_user.messages }
-  req.current_user.messages = []
-  req.current_user.status = 2
-
-app.post '/driver/message', restrict_to_driver, (req, res) ->
-  if req.current_user.phone_number == req.json_data.from && passengers[req.json_data.to]
-    passengers[req.json_data.to].messages.push(req.json_data)
-    res.json { status: 0 }
-  else
-    res.json { status: 1 }
+app.post '/driver/signup',          driver_controller.signup
+app.post '/driver/signin',          driver_controller.signin
+app.post '/driver/signout',         driver_controller.signout
+app.post '/driver/location/update', driver_controller.restrict_to_driver,   driver_controller.updateLocation
+app.post '/driver/taxi/update',     driver_controller.restrict_to_driver,   driver_controller.updateState
+app.get  '/driver/refresh',         driver_controller.restrict_to_driver,   driver_controller.refresh
 
 ######################################################
 # passenger routes
 ######################################################
-app.post '/passenger/signup', (req, res) ->
-  if req.json_data.phone_number && req.json_data.password && req.json_data.nickname
-    req.json_data.salt = make_salt()
-    req.json_data.password = crypto.createHmac('sha1', req.json_data.salt).update(req.json_data.password).digest('hex')
-    req.json_data.messages = []
-    passengers[req.json_data.phone_number] = req.json_data
-    res.json { status: 0 }
-  else
-    res.json { status: 1 }
+app.post '/passenger/signup',           passenger_controller.signup
+app.post '/passenger/signin',           passenger_controller.signin
+app.post '/passenger/signout',          passenger_controller.restrict_to_passenger,   passenger_controller.signout
+app.post '/passenger/location/update',  passenger_controller.restrict_to_passenger,   passenger_controller.updateLocation
+app.get  '/passenger/refresh',          passenger_controller.restrict_to_passenger,   passenger_controller.refresh
 
-app.post '/passenger/signin', (req, res) ->
-  if req.json_data.phone_number && req.json_data.password && passengers[req.json_data.phone_number]
-     current_user = passengers[req.json_data.phone_number]
-     password = crypto.createHmac('sha1', current_user.salt).update(req.json_data.password).digest('hex')
-
-     if password == current_user.password
-       req.session.user = { phone_number: current_user.phone_number, type: "passenger" }
-       current_user.status = 1
-       self = { phone_number: current_user.phone_number, nickname: current_user.nickname }
-       res.json { status: 0, self: self, message: "welcome, #{current_user.nickname}" }
-     else
-       res.json { status: 1 }
-
-  else
-    res.json { status: 1 }
-
-# TODO find the nearest taxi
-app.get '/passenger/taxi/near', restrict_to_passenger, (req, res) ->
-  taxis = []
-
-  _.each drivers, (driver, phone) ->
-    if driver.status > 0 && driver.location
-      taxis.push
-        phone_number: driver.phone_number
-        nickname: driver.nickname
-        car_number: driver.car_number
-        longitude: driver.location.longitude
-        latitude: driver.location.latitude
-
-  res.json { status: 0, taxis: taxis }
-
-
-app.post '/passenger/signout', restrict_to_passenger, (req, res) ->
-  req.current_user.status = 0
-  req.session.destroy()
-  res.json { status: 0, message: "bye" }
-
-app.post '/passenger/location/update', restrict_to_passenger, (req, res) ->
-  req.current_user.location = req.json_data
-  res.json { status: 0 }
-
-app.post '/passenger/message', restrict_to_passenger, (req, res) ->
-  if req.current_user.phone_number == req.json_data.from && drivers[req.json_data.to]
-    drivers[req.json_data.to].messages.push(req.json_data)
-    res.json { status: 0 }
-  else
-    res.json { status: 1 }
-
-# TODO add real-time status update. Use refresh as heart-beat
-app.get '/passenger/refresh', restrict_to_passenger, (req, res) ->
-  res.json { status: 0, messages: req.current_user.messages }
-  req.current_user.messages = []
-  req.current_user.status = 2
+######################################################
+# taxi call routes
+######################################################
+app.get  '/taxi/near',           passenger_controller.restrict_to_passenger, taxi_call_controller.getNearTaxis
+app.post '/service/create',      passenger_controller.restrict_to_passenger, taxi_call_controller.create
+app.post '/service/reply',       driver_controller.restrict_to_driver,       taxi_call_controller.reply
+app.post '/service/cancel',      passenger_controller.restrict_to_passenger, taxi_call_controller.cancel
+app.post '/service/complete',    driver_controller.restrict_to_driver,       taxi_call_controller.complete
 
