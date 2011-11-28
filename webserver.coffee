@@ -61,7 +61,7 @@ app.use (req, res, next) ->
     req.json_data = JSON.parse(req.param("json_data"))
 
   if req.session.user_id
-    User.collection.findOne { _id: req.session.user_id }, {}, (err, doc)->
+    User.collection.findOne { phone_number: req.session.user_id }, {}, (err, doc)->
       req.current_user = doc
       next()
   else
@@ -76,7 +76,7 @@ app.get '/', (req, res, next)->
 ######################################################
 app.post '/driver/signup',          driver_controller.signup
 app.post '/driver/signin',          driver_controller.signin
-app.post '/driver/signout',         driver_controller.signout
+app.post '/driver/signout',         driver_controller.restrict_to_driver,   driver_controller.signout
 app.post '/driver/location/update', driver_controller.restrict_to_driver,   driver_controller.updateLocation
 app.post '/driver/taxi/update',     driver_controller.restrict_to_driver,   driver_controller.updateState
 app.get  '/driver/refresh',         driver_controller.restrict_to_driver,   driver_controller.refresh

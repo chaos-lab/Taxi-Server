@@ -15,6 +15,9 @@ module.exports = Service =
       console.log("Index #{name} created.")
 
   create: (json) ->
+    json.created_at = new Date
+    json.updated_at = new Date
+    this.collection.insert(json)
 
   update: (phone, json) ->
 

@@ -1,17 +1,22 @@
+# taxi call controller
+
+User = require('../models/user')
+Service = require('../models/service')
+
 class TaxiCallController
   constructor: ->
 
   getNearTaxis: (req, res) ->
     taxis = []
   
-    _.each drivers, (driver, phone) ->
-      if driver.status > 0 && driver.location
+    User.collection.find { role: 2, state: {$gte: 1}}, (err, docs)->
+      for doc in docs
         taxis.push
-          phone_number: driver.phone_number
-          nickname: driver.nickname
-          car_number: driver.car_number
-          longitude: driver.location.longitude
-          latitude: driver.location.latitude
+          phone_number: doc.phone_number
+          nickname: doc.nickname
+          car_number: doc.car_number
+          longitude: doc.location.longitude
+          latitude: doc.location.latitude
   
     res.json { status: 0, taxis: taxis }
   

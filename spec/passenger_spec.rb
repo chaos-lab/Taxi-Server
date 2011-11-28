@@ -68,7 +68,7 @@ describe 'passenger' do
 
   it "should be able to get near taxi" do
     data = { "json_data" => { latitude: 34.545, longitude: 118.324 }.to_json }
-    res = @passenger.get '/passenger/taxi/near', data
+    res = @passenger.get '/taxi/near', data
     res.status.should == 0
     res.taxis?.should be_true
   end

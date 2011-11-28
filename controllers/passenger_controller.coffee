@@ -24,14 +24,14 @@ class PassengerController
   signin: (req, res) ->
     if req.json_data.phone_number && req.json_data.password
        User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
-         return res.json { status: 1 } if err
+         return res.json { status: 1 } if !doc
   
-         if password == doc.password && doc.role == 1
-           req.session.user_id = doc._id
+         if req.json_data.password == doc.password && doc.role == 1
+           req.session.user_id = doc.phone_number
            User.collection.update({_id: doc._id}, {$set: {state: 1}})
 
            self = { phone_number: doc.phone_number, nickname: doc.nickname }
-           res.json { status: 0, self: self, message: "welcome, #{current_user.nickname}" }
+           res.json { status: 0, self: self, message: "welcome, #{doc.nickname}" }
          else
            res.json { status: 1 }
     else
