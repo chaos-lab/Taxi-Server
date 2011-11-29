@@ -19,14 +19,15 @@
 
 # How to test
 
-   First start node.js:
+   First start node.js(ensure mongodb is running):
 
-     node server.js
+     NODE_ENV=test node server.js
 
    Install necessary gems(ensure ruby is installed): 
 
      # unnecessary if bundler is already installed
      gem install bundler
+
      bundle install
 
    run test: 
