@@ -6,6 +6,7 @@ mongodb = require('mongodb')
 
 module.exports = Service =
   setup: (db) ->
+    this.counters = new mongodb.Collection(db, 'counters')
     this.collection = new mongodb.Collection(db, 'services')
     this.collection.ensureIndex {driver: 1}, (err, name)->
     this.collection.ensureIndex {passenger: 1}, (err, name)->
@@ -14,11 +15,17 @@ module.exports = Service =
   create: (json, fn) ->
     json.created_at = new Date
     json.updated_at = new Date
+
     this.collection.insert json, (err, docs) ->
       doc = if docs then docs[0] else null
       fn(err, doc) if fn
 
-  update: (phone, json) ->
+  uniqueID: (fn) ->
+    query = { _id: 'services' }
+    sort = [['_id','asc']]
+    update = { $inc: { next: 1 } }
+    options = { 'new': true, upsert: true }
 
-  find: (query, fn) ->
+    this.counters.findAndModify query, sort, update, options, (err, doc)->
+      fn(doc.next)
 

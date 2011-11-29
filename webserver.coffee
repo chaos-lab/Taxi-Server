@@ -43,7 +43,6 @@ app.start = ->
 # configurations
 ######################################################
 app.configure ->
-  app.use(express.profiler())
   # session support
   app.use(express.bodyParser())
   app.use(express.cookieParser())
@@ -60,6 +59,10 @@ app.configure ->
 app.use (req, res, next) ->
   if req.param("json_data")
     req.json_data = JSON.parse(req.param("json_data"))
+
+  res.on "finish", ->
+    console.dir(req.json_data) if req.json_data
+    console.log("\n")
 
   unless req.session.user_id
     return next()

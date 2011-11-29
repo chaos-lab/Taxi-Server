@@ -9,25 +9,31 @@ class TaxiCallController
   getNearTaxis: (req, res) ->
     taxis = []
   
-    User.collection.find { role: 2, state:{$gte: 1} }, {}, (err, docs)->
-      for doc in docs
-        taxis.push
-          phone_number: doc.phone_number
-          nickname: doc.nickname
-          car_number: doc.car_number
-          longitude: doc.location.longitude
-          latitude: doc.location.latitude
+    User.collection.find { role: 2, state:{$gte: 1} }, (err, cursor)->
+      cursor.toArray (err, docs) ->
+        for doc in docs
+          taxis.push
+            phone_number: doc.phone_number
+            nickname: doc.nickname
+            car_number: doc.car_number
+            longitude: doc.location.longitude
+            latitude: doc.location.latitude
   
-      res.json { status: 0, taxis: taxis }
+        res.json { status: 0, taxis: taxis }
   
   create: (req, res) ->
     return res.json { status: 1 } unless req.json_data.driver
 
-    req.json_data.state = 1
-    req.json_data.passenger = req.current_user.phone_number
+    Service.uniqueID (id)->
+      data =
+        driver: req.json_data.driver
+        passenger: req.current_user.phone_number
+        state: 1
+        location: req.json_data.location
+        key: req.json_data.key
+        _id: id
 
-    Service.create req.json_data, (err, doc)->
-      return res.json { status: 1 } unless doc
+      Service.create data
 
       message =
         type: "call-taxi"
@@ -35,21 +41,22 @@ class TaxiCallController
           phone_number: req.current_user.phone_number
           nickname:req.current_user.nickname
         location: req.json_data.location
-        id: doc._id
+        id: id
         timestamp: new Date().valueOf()
 
       User.send(req.json_data.driver, message)
-      res.json { status: 0, id: doc._id }
+      res.json { status: 0, id: id }
   
   reply: (req, res) ->
     return res.json { status: 1 } unless req.json_data.id
 
     Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
       # service doesn't exist, already cancelled, etc
-      return res.json({ status: 1 }) unless (doc && doc.state == 1)
+      unless doc && doc.state == 1
+        return res.json { status: 1 }
 
       state = if req.json_data.accept then 2 else -1
-      Service.collection.update({_id: req.current_user._id}, {$set: {state: state}})
+      Service.collection.update({_id: req.json_data.id}, {$set: {state: state}})
     
       message =
         type: "call-taxi-reply"
@@ -61,11 +68,17 @@ class TaxiCallController
       res.json { status: 0 }
 
   cancel: (req, res) ->
-    return res.json { status: 1 } unless req.json_data.id
+    if !req.json_data.id && !req.json_data.key
+      console.log("==============I'm in if====================")
+      return res.json { status: 1 }
 
-    Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
+    query = if req.json_data.id then {_id: req.json_data.id} else {key: req.json_data.key}
+    console.dir query
+
+    Service.collection.findOne query, (err, doc) ->
       # can't cancel completed service or rejected service
-      return res.json { status: 1 } if doc.state == 3 || doc.state == -1
+      if !doc || doc.state == 3 || doc.state == -1
+        return res.json { status: 1 }
 
       Service.collection.update({_id: req.current_user._id}, {$set: {state: -2}})
       message =

@@ -1,5 +1,7 @@
 require File.expand_path("../spec_helper", __FILE__)
 
+$service_id = 0
+
 describe 'call taxi' do
   before(:all) do
     @passenger = Session.new
@@ -11,8 +13,6 @@ describe 'call taxi' do
     @driver.signup_driver("driver1", "cang", "123456", "AB-34534")
     @driver.signin_driver("driver1", "123456")
     @driver.update_driver_location(119.3434, 33.5656)
-
-    @service_id = 0
 
   end
 
@@ -34,13 +34,13 @@ describe 'call taxi' do
     res = @driver.get '/driver/refresh'
     res.status.should == 0
     res.messages?.should be_true
-    res.messages[0].to_json.type.should == "call-taxi"
-    res.messages[0].to_json.passenger.phone_number.should == "passenger1"
-    @service_id = res.messages[0].to_json.id
+    res.messages[0].type.should == "call-taxi"
+    res.messages[0].passenger.phone_number.should == "passenger1"
+    $service_id = res.messages[0].id
   end
 
   it "should be able for driver to reply taxi call" do
-    res = @driver.post '/service/reply', :json_data => { id: @service_id, accept: true }.to_json
+    res = @driver.post '/service/reply', :json_data => { id: $service_id, accept: true }.to_json
     res.status.should == 0
   end
 
@@ -48,12 +48,12 @@ describe 'call taxi' do
     res = @passenger.get '/passenger/refresh'
     res.status.should == 0
     res.messages?.should be_true
-    res.messages[0].to_json.type.should == "call-taxi-reply"
-    res.messages[0].to_json.accept.should == true
+    res.messages[0].type.should == "call-taxi-reply"
+    res.messages[0].accept.should == true
   end
 
   it "should be able for passenger to cancel taxi call" do
-    res = @driver.post '/service/cancel', :json_data => { id: @service_id }.to_json
+    res = @driver.post '/service/cancel', :json_data => { id: $service_id }.to_json
     res.status.should == 0
   end
 
@@ -61,8 +61,8 @@ describe 'call taxi' do
     res = @driver.get '/driver/refresh'
     res.status.should == 0
     res.messages?.should be_true
-    res.messages[0].to_json.type.should == "call-taxi-cancel"
-    res.messages[0].to_json.id.should == @service_id
+    res.messages[0].type.should == "call-taxi-cancel"
+    res.messages[0].id.should == $service_id
   end
 end
 

@@ -30,5 +30,6 @@ module.exports = User =
       return unless doc
 
       doc.messages = [] unless doc.messages
-      this.collection.update { _id: doc._id }, { $set: {messages: doc.messages.push(message)} }
+      doc.messages.push(message)
+      this.collection.update { _id: doc._id }, { $set: {messages: doc.messages} }
 

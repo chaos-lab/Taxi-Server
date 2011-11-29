@@ -11,17 +11,23 @@ class DriverController
     if (req.current_user && req.current_user.role == 2)
       next()
     else
+      console.log('Unauthorized')
       res.json { status: 1, message: 'Unauthorized' }
   
   signup: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname && req.json_data.car_number
        return res.json { status: 1 }
 
-    req.json_data.role = 2
-    req.json_data.state = 0
-    req.json_data.taxi_state = 1
+    data =
+      phone_number: req.json_data.phone_number
+      password: req.json_data.password
+      nickname: req.json_data.nickname
+      car_number: req.json_data.car_number
+      role: 2
+      state: 0
+      taxi_state: 1
 
-    User.create(req.json_data)
+    User.create(data)
 
     res.json { status: 0 }
   
@@ -45,16 +51,23 @@ class DriverController
     res.json { status: 0, message: "bye" }
   
   updateLocation: (req, res) ->
-    User.collection.update({_id: req.current_user._id}, {$set: {location: req.json_data}})
+    unless req.json_data.latitude && req.json_data.longitude
+      return res.json { status: 1 }
+
+    loc =
+      longitude: req.json_data.longitude
+      latitude: req.json_data.latitude
+    User.collection.update {_id: req.current_user._id}, {$set: {location: loc}}
 
     message =
       type: "location-update"
       phone_number: req.current_user.phone_number
-      location: req.json_data
+      location: loc
       timestamp: new Date().valueOf()
 
-    Service.collection.find {driver: req.current_user.phone_number, state: 2}, {}, (err, docs) ->
-      User.send(doc.passenger, message) for doc in docs
+    Service.collection.find {driver: req.current_user.phone_number, state: 2}, (err, cursor) ->
+      cursor.toArray (err, docs) ->
+        User.send(doc.passenger, message) for doc in docs
 
     res.json { status: 0 }
 
