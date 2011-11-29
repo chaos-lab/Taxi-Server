@@ -61,14 +61,14 @@ app.use (req, res, next) ->
   if req.param("json_data")
     req.json_data = JSON.parse(req.param("json_data"))
 
-  if req.session.user_id
-    User.collection.findOne { phone_number: req.session.user_id }, {}, (err, doc)->
-      if doc
-        User.collection.update {_id: doc.id}, {$set: {last_active_at: new Date(), state: 2}}
-        req.current_user = doc
+  unless req.session.user_id
+    return next()
 
-      next()
-  else
+  User.collection.findOne { phone_number: req.session.user_id }, {}, (err, doc)->
+    if doc
+      User.collection.update {_id: doc._id}, {$set: {last_active_at: new Date(), state: 2}}
+      req.current_user = doc
+
     next()
 
 # debug routes
