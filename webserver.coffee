@@ -43,6 +43,7 @@ app.start = ->
 # configurations
 ######################################################
 app.configure ->
+  app.use(express.profiler())
   # session support
   app.use(express.bodyParser())
   app.use(express.cookieParser())
@@ -62,7 +63,10 @@ app.use (req, res, next) ->
 
   if req.session.user_id
     User.collection.findOne { phone_number: req.session.user_id }, {}, (err, doc)->
-      req.current_user = doc
+      if doc
+        User.collection.update {_id: doc.id}, {$set: {last_active_at: new Date(), state: 2}}
+        req.current_user = doc
+
       next()
   else
     next()

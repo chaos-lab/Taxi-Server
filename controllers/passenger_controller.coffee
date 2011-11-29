@@ -13,31 +13,28 @@ class PassengerController
       res.json { status: 1, message: 'Unauthorized' }
 
   signup: (req, res) ->
-    if req.json_data.phone_number && req.json_data.password && req.json_data.nickname
-      req.json_data.messages = []
-      req.json_data.role = 1
-      req.json_data.state = 0
-      User.create(req.json_data)
-      res.json { status: 0 }
-    else
-      res.json { status: 1 }
+    unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname
+      return res.json { status: 1 }
+
+    req.json_data.role = 1
+    req.json_data.state = 0
+    User.create(req.json_data)
+
+    res.json { status: 0 }
   
   signin: (req, res) ->
-    if req.json_data.phone_number && req.json_data.password
-       User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
-         return res.json { status: 1 } if !doc
-  
-         if req.json_data.password == doc.password && doc.role == 1
-           req.session.user_id = doc.phone_number
-           req.session.last_active_time = new Date
-           User.collection.update({_id: doc._id}, {$set: {state: 1}})
+    unless req.json_data.phone_number && req.json_data.password
+      return res.json({ status: 1 })
 
-           self = { phone_number: doc.phone_number, nickname: doc.nickname }
-           res.json { status: 0, self: self, message: "welcome, #{doc.nickname}" }
-         else
-           res.json { status: 1 }
-    else
-      res.json { status: 1 }
+    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
+      unless doc && req.json_data.password == doc.password && doc.role == 1
+        return res.json { status: 1 }
+
+      req.session.user_id = doc.phone_number
+      User.collection.update({_id: doc._id}, {$set: {state: 1}})
+
+      self = { phone_number: doc.phone_number, nickname: doc.nickname }
+      res.json { status: 0, self: self, message: "welcome, #{doc.nickname}" }
   
   signout: (req, res) ->
     User.collection.update({_id: req.current_user._id}, {$set: {state: 0}})
@@ -49,7 +46,7 @@ class PassengerController
     res.json { status: 0 }
   
   refresh: (req, res) ->
-    User.fresh(req.current_user._id)
-    res.json { status: 0, messages: req.current_user.messages }
+    User.collection.update {_id: req.current_user._id}, {$set: {messages: []}}
+    res.json { status: 0, messages: req.current_user.messages || [] }
 
 module.exports = PassengerController

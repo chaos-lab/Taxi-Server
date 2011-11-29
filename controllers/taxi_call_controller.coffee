@@ -9,7 +9,7 @@ class TaxiCallController
   getNearTaxis: (req, res) ->
     taxis = []
   
-    User.collection.find { role: 2, state: {$gte: 1}}, {}, (err, docs)->
+    User.collection.find { role: 2, state:{$gte: 1} }, {}, (err, docs)->
       for doc in docs
         taxis.push
           phone_number: doc.phone_number
@@ -18,7 +18,7 @@ class TaxiCallController
           longitude: doc.location.longitude
           latitude: doc.location.latitude
   
-    res.json { status: 0, taxis: taxis }
+      res.json { status: 0, taxis: taxis }
   
   create: (req, res) ->
     return res.json { status: 1 } unless req.json_data.driver
@@ -27,7 +27,7 @@ class TaxiCallController
     req.json_data.passenger = req.current_user.phone_number
 
     Service.create req.json_data, (err, doc)->
-      return res.json { status: 1 } if !doc
+      return res.json { status: 1 } unless doc
 
       message =
         type: "call-taxi"
