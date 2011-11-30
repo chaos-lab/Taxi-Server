@@ -9,7 +9,7 @@ class TaxiCallController
   getNearTaxis: (req, res) ->
     taxis = []
   
-    User.collection.find { role: 2, state:{$gte: 1} }, (err, cursor)->
+    User.collection.find { role: 2, state:{$gte: 1}, taxi_state:1 }, (err, cursor)->
       cursor.toArray (err, docs) ->
         for doc in docs
           taxis.push
@@ -69,10 +69,9 @@ class TaxiCallController
 
   cancel: (req, res) ->
     if !req.json_data.id && !req.json_data.key
-      console.log("==============I'm in if====================")
       return res.json { status: 1 }
 
-    query = if req.json_data.id then {_id: req.json_data.id} else {key: req.json_data.key}
+    query = if req.json_data.id then {_id: req.json_data.id} else {key: req.json_data.key, passenger: req.current_user.phone_number}
     console.dir query
 
     Service.collection.findOne query, (err, doc) ->
