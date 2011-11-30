@@ -27,7 +27,7 @@ batch1 =
 
     'signup with incomplete info':
       topic: ->
-        data = { phone_number: "passenger1", password: "123456" }
+        data = { phone_number: "driver1", password: "123456", nickname:"cang" }
         data = JSON.stringify(data)
         browser.post('/passenger/signup', { body: 'json_data=' + data}, this.callback)
         return undefined
@@ -40,7 +40,7 @@ batch1 =
       topic: ->
         data = { latitude: 34.545, longitude: 118.324 }
         data = JSON.stringify(data)
-        browser.post('/passenger/location/update', { body: 'json_data=' + data}, this.callback)
+        browser.post('/driver/location/update', { body: 'json_data=' + data}, this.callback)
         return undefined
 
       'should fail': (res, $) ->
@@ -51,7 +51,7 @@ batch1 =
       topic: ->
         data = { phone_number: "xxxx", password: "abcd234" }
         data = JSON.stringify(data)
-        browser.post('/passenger/signin', { body: 'json_data=' + data}, this.callback)
+        browser.post('/driver/signin', { body: 'json_data=' + data}, this.callback)
         return undefined
 
       'should fail': (res, $) ->
@@ -60,9 +60,9 @@ batch1 =
 
     "signup with complete info":
       topic: ->
-        data = { phone_number: "passenger1", password: "123456", nickname: "liufy" }
+        data = { phone_number: "driver1", password: "123456", nickname: "cang" }
         data = JSON.stringify(data)
-        browser.post('/passenger/signup', { body: 'json_data=' + data}, this.callback)
+        browser.post('/driver/signup', { body: 'json_data=' + data}, this.callback)
         return undefined
 
       'should succeed': (res, $) ->
@@ -73,9 +73,9 @@ batch2 =
   "after signin":
     "signin with incorrect credentials":
       topic: ->
-        data = { phone_number: "passenger1", password: "abcd234" }
+        data = { phone_number: "driver1", password: "abcd234" }
         data = JSON.stringify(data)
-        browser.post('/passenger/signin', { body: 'json_data=' + data}, this.callback)
+        browser.post('/driver/signin', { body: 'json_data=' + data}, this.callback)
         return undefined
 
       'should fail': (res, $) ->
@@ -84,9 +84,9 @@ batch2 =
 
     "signin with correct credentials":
       topic: ->
-        data = { phone_number: "passenger1", password: "123456" }
+        data = { phone_number: "driver1", password: "123456" }
         data = JSON.stringify(data)
-        browser.post('/passenger/signin', { body: 'json_data=' + data}, this.callback)
+        browser.post('/driver/signin', { body: 'json_data=' + data}, this.callback)
         return undefined
 
       'should succeed': (res, $) ->
@@ -95,11 +95,11 @@ batch2 =
         assert.isObject(res.body.self)
         assert.equal('liufy', res.body.self.nickname)
 
-      'visit driver path':
+      'visit passenger path':
         topic: ->
           data = { latitude: 34.545, longitude: 118.324 }
           data = JSON.stringify(data)
-          browser.post('/driver/location/update', { body: 'json_data=' + data}, this.callback)
+          browser.post('/passenger/location/update', { body: 'json_data=' + data}, this.callback)
           return undefined
 
         'should fail': (res, $) ->
@@ -110,7 +110,7 @@ batch2 =
         topic: ->
           data = { latitude: 34.545, longitude: 118.324 }
           data = JSON.stringify(data)
-          browser.post('/passenger/location/update', { body: 'json_data=' + data}, this.callback)
+          browser.post('/driver/location/update', { body: 'json_data=' + data}, this.callback)
           return undefined
 
         'should succeed': (res, $) ->
@@ -119,7 +119,7 @@ batch2 =
 
       'refresh':
         topic: ->
-          browser.get('/passenger/refresh', {}, this.callback)
+          browser.get('/driver/refresh', {}, this.callback)
           return undefined
 
         'should succeed': (res, $) ->
@@ -127,11 +127,11 @@ batch2 =
           assert.equal(0, res.body.status)
           assert.isArray(0, res.body.messages)
 
-      'get near taxi':
+      'update state':
         topic: ->
-          data = { latitude: 34.545, longitude: 118.324 }
+          data = { state: 2 }
           data = JSON.stringify(data)
-          browser.get('/taxi/near', { body: 'json_data=' + data}, this.callback)
+          browser.get('/driver/taxi/update', { body: 'json_data=' + data}, this.callback)
           return undefined
 
         'should succeed': (res, $) ->
@@ -143,7 +143,7 @@ batch3 =
   "after signout":
     'signout':
       topic: ->
-        browser.post('/passenger/signout', {}, this.callback)
+        browser.post('/driver/signout', {}, this.callback)
         return undefined
   
       'should succeed': (res, $) ->
@@ -154,7 +154,7 @@ batch3 =
         topic: ->
           data = { latitude: 34.545, longitude: 118.324 }
           data = JSON.stringify(data)
-          browser.post('/passenger/location/update', { body: 'json_data=' + data}, this.callback)
+          browser.post('/driver/location/update', { body: 'json_data=' + data}, this.callback)
           return undefined
 
         'should fail': (res, $) ->
@@ -163,7 +163,7 @@ batch3 =
 
 # Batches  are executed sequentially.
 # Contexts are executed in parallel.
-suite = vows.describe('passenger test')
+suite = vows.describe('driver test')
 suite.addBatch(batch1)
 suite.addBatch(batch2)
 suite.addBatch(batch3)
