@@ -27,5 +27,5 @@
 
    run test: 
 
-     node_modules/.bin/vows test/*
+     make test
 
