@@ -2,6 +2,7 @@
     "name": "taxi-server"
   , "description": "web server of taxi"
   , "version": "0.3.0"
+  , "scripts": { "start": "make run" }
   , "dependencies": {
         "express": "2.5.0"
       , "mongodb": "0.9.6-23"
