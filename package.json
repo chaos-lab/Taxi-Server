@@ -1,10 +1,12 @@
 {
     "name": "taxi-server"
   , "description": "web server of taxi"
-  , "version": "0.3"
+  , "version": "0.3.0"
   , "dependencies": {
         "express": "2.5.0"
       , "mongodb": "0.9.6-23"
       , "coffee-script": "1.1.2"
+      , "tobi": "0.3.2"
+      , "vows": "0.6.0"
     }
 }

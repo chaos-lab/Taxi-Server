@@ -28,30 +28,40 @@ taxi_call_controller = new TaxiCallController()
 # create express
 ######################################################
 module.exports = app = express.createServer()
-app.start = ->
+
+app.setupDB = (fn) ->
   new mongodb.Db(config.database.db, server, {}).open (error, client)->
     throw error if error
 
     User.setup(client)
     Service.setup(client)
 
-    app.listen config.webserver.port, ->
-      addr = app.address()
-      console.log('app listening on http://' + addr.address + ':' + addr.port)
+    fn(client) if fn
+
+app.start = ->
+  app.listen config.webserver.port, ->
+    addr = app.address()
+    console.log('app listening on http://' + addr.address + ':' + addr.port)
 
 ######################################################
 # configurations
 ######################################################
 app.configure ->
-  # session support
   app.use(express.bodyParser())
   app.use(express.cookieParser())
   app.use(express.session({ secret: "keyboard cat" }))
 
-  app.use(express.logger())
   app.use express.errorHandler
     dumpExceptions: true
     showStack : true
+
+app.configure 'development', 'production', ->
+  app.use(express.logger())
+  app.use (req, res, next) ->
+    res.on "finish", ->
+      console.dir(req.json_data) if req.json_data
+      console.log("\n")
+    next()
 
 ######################################################
 # preprocess json data
@@ -59,10 +69,6 @@ app.configure ->
 app.use (req, res, next) ->
   if req.param("json_data")
     req.json_data = JSON.parse(req.param("json_data"))
-
-  res.on "finish", ->
-    console.dir(req.json_data) if req.json_data
-    console.log("\n")
 
   unless req.session.user_id
     return next()

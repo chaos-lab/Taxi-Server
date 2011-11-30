@@ -1,8 +1,10 @@
 require('coffee-script')
 
-process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+var env = process.env.NODE_ENV || 'development'
+global.config = require('./init/' + env)
 
-global.config = require('./init/' + process.env.NODE_ENV)
-webapp = require('./webserver')
-webapp.start()
+var webapp = module.exports = require('./webserver')
+webapp.setupDB(function(db) {
+  if (!module.parent) webapp.start()
+})
 

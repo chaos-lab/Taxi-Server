@@ -19,18 +19,13 @@
 
 # How to test
 
-   First start node.js(ensure mongodb is running):
+   First ensure mongodb is running.
 
-     NODE_ENV=test node server.js
+   Install necessary packages:
 
-   Install necessary gems(ensure ruby is installed): 
-
-     # unnecessary if bundler is already installed
-     gem install bundler
-
-     bundle install
+     npm install
 
    run test: 
 
-     rake spec
+     node_modules/.bin/vows test/*
 
