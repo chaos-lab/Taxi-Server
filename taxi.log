@@ -1,0 +1,178 @@
+Warning: connection.session() MemoryStore is not
+designed for a production environment, as it will leak
+memory, and obviously only work within a single process.
+app listening on http://0.0.0.0:80
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/signup HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'passenger1',
+  password: '123456',
+  nickname: 'liufy' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/signin HTTP/1.1" 200 95 "-" "Ruby"
+{ phone_number: 'passenger1', password: '123456' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/location/update HTTP/1.1" 200 12 "-" "Ruby"
+{ latitude: 118.3434, longitude: 32.5656 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/signup HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'driver1',
+  password: '123456',
+  nickname: 'cang',
+  car_number: 'AB-34534' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/signin HTTP/1.1" 200 90 "-" "Ruby"
+{ phone_number: 'driver1', password: '123456' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/location/update HTTP/1.1" 200 12 "-" "Ruby"
+{ latitude: 119.3434, longitude: 33.5656 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET /taxi/near?json_data=%7B%22latitude%22%3A34.545%2C%22longitude%22%3A118.324%7D HTTP/1.1" 200 131 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /service/create HTTP/1.1" 200 19 "-" "Ruby"
+{ location: { latitude: 118.2342, longitude: 32.43432 },
+  driver: 'driver1',
+  key: 35432543 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET /driver/refresh HTTP/1.1" 200 194 "-" "Ruby"
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /service/reply HTTP/1.1" 200 12 "-" "Ruby"
+{ id: 1, accept: true }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET /passenger/refresh HTTP/1.1" 200 99 "-" "Ruby"
+
+
+Unauthorized
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /service/cancel HTTP/1.1" 200 37 "-" "Ruby"
+{ id: 1 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET /driver/refresh HTTP/1.1" 200 26 "-" "Ruby"
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET / HTTP/1.1" 200 38 "-" "Ruby"
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/signup HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'passenger1',
+  password: '123456',
+  nickname: 'liufy' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/signup HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'passenger1', password: '123456' }
+
+
+Unauthorized
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/location/update HTTP/1.1" 200 37 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/signin HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'xxxx', password: 'abcd234' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/signin HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'passenger1', password: 'abcd234' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/signin HTTP/1.1" 200 95 "-" "Ruby"
+{ phone_number: 'passenger1', password: '123456' }
+
+
+Unauthorized
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/location/update HTTP/1.1" 200 37 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/location/update HTTP/1.1" 200 12 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET /passenger/refresh HTTP/1.1" 200 26 "-" "Ruby"
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET /taxi/near?json_data=%7B%22latitude%22%3A34.545%2C%22longitude%22%3A118.324%7D HTTP/1.1" 200 131 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/signout HTTP/1.1" 200 28 "-" "Ruby"
+Unauthorized
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/location/update HTTP/1.1" 200 37 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET / HTTP/1.1" 200 38 "-" "Ruby"
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/signup HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'driver1',
+  password: '123456',
+  nickname: 'liufy',
+  car_number: 'XD-23443' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/signup HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'driver1',
+  password: '123456',
+  nickname: 'liufy' }
+
+
+Unauthorized
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/location/update HTTP/1.1" 200 37 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/signin HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'driver1', password: 'abcd234' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/signin HTTP/1.1" 200 12 "-" "Ruby"
+{ phone_number: 'xxxx', password: 'abcd234' }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/signin HTTP/1.1" 200 90 "-" "Ruby"
+{ phone_number: 'driver1', password: '123456' }
+
+
+Unauthorized
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /passenger/location/update HTTP/1.1" 200 37 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/location/update HTTP/1.1" 200 12 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/taxi/update HTTP/1.1" 200 12 "-" "Ruby"
+{ state: 1 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "GET /driver/refresh HTTP/1.1" 200 26 "-" "Ruby"
+
+
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/signout HTTP/1.1" 200 28 "-" "Ruby"
+Unauthorized
+127.0.0.1 - - [Wed, 30 Nov 2011 14:18:53 GMT] "POST /driver/location/update HTTP/1.1" 200 37 "-" "Ruby"
+{ latitude: 34.545, longitude: 118.324 }
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:19:50 GMT] "GET / HTTP/1.1" 200 38 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.215 Safari/535.1"
+
+
+127.0.0.1 - - [Wed, 30 Nov 2011 14:19:55 GMT] "GET /favicon.ico HTTP/1.1" 404 - "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/13.0.782.215 Safari/535.1"
+
+

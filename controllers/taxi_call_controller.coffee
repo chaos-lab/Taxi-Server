@@ -10,20 +10,19 @@ class TaxiCallController
     taxis = []
   
     User.collection.find { role: 2, state:{$gte: 1}, taxi_state:1 }, (err, cursor)->
-      if err
-        return res.json { status: 1 }
+      return res.json { status: 1 } if err
 
       cursor.toArray (err, docs) ->
-        if err
-          return res.json { status: 1 }
+        return res.json { status: 1 } if err
 
         for doc in docs
-          taxis.push
-            phone_number: doc.phone_number
-            nickname: doc.nickname
-            car_number: doc.car_number
-            longitude: doc.location.longitude
-            latitude: doc.location.latitude
+          if doc.location
+            taxis.push
+              phone_number: doc.phone_number
+              nickname: doc.nickname
+              car_number: doc.car_number
+              longitude: doc.location.longitude
+              latitude: doc.location.latitude
   
         res.json { status: 0, taxis: taxis }
   
