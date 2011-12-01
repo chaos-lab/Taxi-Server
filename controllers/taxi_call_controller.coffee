@@ -66,7 +66,7 @@ class TaxiCallController
       message =
         type: "call-taxi-reply"
         accept: req.json_data.accept
-        id: doc._id
+        key: doc.key
         timestamp: new Date().valueOf()
 
       User.send(doc.passenger, message)
@@ -103,7 +103,7 @@ class TaxiCallController
 
       message =
         type: "call-taxi-complete"
-        id: doc._id
+        key: doc.key
         timestamp: new Date().valueOf()
 
       User.send(doc.passenger, message)
