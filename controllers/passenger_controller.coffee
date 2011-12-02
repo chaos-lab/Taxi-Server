@@ -15,7 +15,7 @@ class PassengerController
 
   signup: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname
-      return res.json { status: 1 }
+      return res.json { status: 2, message: "incorrect data format" }
 
     data =
       phone_number: req.json_data.phone_number
@@ -29,11 +29,11 @@ class PassengerController
   
   signin: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password
-      return res.json { status: 1 }
+      return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
       unless doc && req.json_data.password == doc.password && doc.role == 1
-        return res.json { status: 1 }
+        return res.json { status: 2, message: "incorrect credentials" }
 
       req.session.user_id = doc.phone_number
       User.collection.update {_id: doc._id}, {$set: {state: 1}}
@@ -48,7 +48,7 @@ class PassengerController
   
   updateLocation: (req, res) ->
     unless req.json_data.latitude && req.json_data.longitude
-      return res.json { status: 1 }
+      return res.json { status: 2, message: "incorrect data format" }
 
     loc =
       longitude: req.json_data.longitude
