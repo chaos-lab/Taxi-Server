@@ -75,6 +75,9 @@ class DriverController
     res.json { status: 0 }
 
   updateState: (req, res) ->
+    unless req.json_data.state
+      return res.json { status: 2, message: "incorrect data format" }
+
     User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: req.json_data.state}})
     res.json { status: 0 }
   
