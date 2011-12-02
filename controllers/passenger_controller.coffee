@@ -17,15 +17,18 @@ class PassengerController
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname
       return res.json { status: 2, message: "incorrect data format" }
 
-    data =
-      phone_number: req.json_data.phone_number
-      password: req.json_data.password
-      nickname: req.json_data.nickname
-      role: 1
-      state: 0
-    User.create(data)
+    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
+      return res.json { status: 3, message: "phone_number already registered." } if doc
 
-    res.json { status: 0 }
+      data =
+        phone_number: req.json_data.phone_number
+        password: req.json_data.password
+        nickname: req.json_data.nickname
+        role: 1
+        state: 0
+      User.create(data)
+
+      res.json { status: 0 }
   
   signin: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password

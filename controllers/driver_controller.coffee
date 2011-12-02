@@ -18,18 +18,21 @@ class DriverController
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname && req.json_data.car_number
        return res.json { status: 2, message: "incorrect data format" }
 
-    data =
-      phone_number: req.json_data.phone_number
-      password: req.json_data.password
-      nickname: req.json_data.nickname
-      car_number: req.json_data.car_number
-      role: 2
-      state: 0
-      taxi_state: 1
+    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
+      return res.json { status: 3, message: "phone_number already registered." } if doc
 
-    User.create(data)
+      data =
+        phone_number: req.json_data.phone_number
+        password: req.json_data.password
+        nickname: req.json_data.nickname
+        car_number: req.json_data.car_number
+        role: 2
+        state: 0
+        taxi_state: 1
 
-    res.json { status: 0 }
+      User.create(data)
+
+      res.json { status: 0 }
   
   signin: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password
