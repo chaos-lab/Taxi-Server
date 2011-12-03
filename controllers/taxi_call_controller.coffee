@@ -88,7 +88,7 @@ class TaxiCallController
       if !doc || doc.state == 3 || doc.state == -1
         return res.json { status: 3, message: "service can't be cancelled" }
 
-      Service.collection.update({_id: req.current_user._id}, {$set: {state: -2}})
+      Service.collection.update({_id: doc._id}, {$set: {state: -2}})
       message =
         type: "call-taxi-cancel"
         id: doc._id
@@ -103,7 +103,7 @@ class TaxiCallController
     Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
       # can only complete accepted service
       return res.json { status: 3, message: "only accepted service can be completed" } unless doc.state == 2
-      Service.collection.update({_id: req.current_user._id}, {$set: {state: -2}})
+      Service.collection.update({_id: doc._id}, {$set: {state: -2}})
 
       message =
         type: "call-taxi-complete"
