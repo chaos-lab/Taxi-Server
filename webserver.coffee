@@ -80,6 +80,11 @@ app.use (req, res, next) ->
 
     next()
 
+updateUserState = ->
+  User.collection.update { last_active_at:{$lt: new Date(new Date().valueOf() - 10000)}, state: 2}  , {$set: {state: 0}}
+
+setInterval(updateUserState, 10000)
+
 # debug routes
 app.get '/', (req, res, next)->
   res.json { status: 0, message:"hello, world!" }

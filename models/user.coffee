@@ -29,7 +29,5 @@ module.exports = User =
     this.collection.findOne { phone_number: phone }, {}, (err, doc) =>
       return unless doc
 
-      doc.messages = [] unless doc.messages
-      doc.messages.push(message)
-      this.collection.update { _id: doc._id }, { $set: {messages: doc.messages} }
+      this.collection.update { _id: doc._id }, { $push: {messages: message} }
 
