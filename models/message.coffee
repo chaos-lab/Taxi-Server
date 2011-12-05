@@ -12,10 +12,3 @@ module.exports = Message =
     this.collection.ensureIndex {phone_number: 1}, (err, name)->
     this.collection.ensureIndex {type: 1}, (err, name)->
 
-  create: (json, fn) ->
-    json.created_at = new Date
-
-    this.collection.insert json, (err, docs) ->
-      doc = if docs then docs[0] else null
-      fn(err, doc) if fn
-

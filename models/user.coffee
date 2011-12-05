@@ -34,10 +34,6 @@ module.exports = User =
 
   getMessages: (phone, fn)
     Message.collection.find {receiver: phone}, (err, cursor) ->
-      if err
-        console.log("db query error")
-        return res.json { status: 5, message: "db error" }
-
       cursor.toArray (err, docs) ->
         messages = []
         for doc in docs
