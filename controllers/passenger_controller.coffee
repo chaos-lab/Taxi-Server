@@ -1,6 +1,8 @@
 # controllers for passenger
 
 User = require('../models/user')
+Service = require('../models/service')
+Message = require('../models/message')
 
 class PassengerController
 
@@ -72,10 +74,23 @@ class PassengerController
       latitude: req.json_data.latitude
 
     User.collection.update {_id: req.current_user._id}, {$set: {location: loc}}
+
+    Service.collection.find {passenger: req.current_user.phone_number, state: 2}, (err, cursor) ->
+      cursor.toArray (err, docs) ->
+        for doc in docs
+          message =
+            receiver: doc.driver
+            type: "location-update"
+            phone_number: req.current_user.phone_number
+            location: loc
+            timestamp: new Date().valueOf()
+
+          Message.collection.update({receiver: message.receiver, phone_number: message.phone_number, type: message.type}, message, {upsert: true})
+
     res.json { status: 0 }
   
   refresh: (req, res) ->
-    User.collection.update {_id: req.current_user._id}, {$set: {messages: []}}
-    res.json { status: 0, messages: req.current_user.messages || [] }
+    User.getMessages req.current_user.phone_number, (messages)->
+        res.json { status: 0, messages: messages }
 
 module.exports = PassengerController

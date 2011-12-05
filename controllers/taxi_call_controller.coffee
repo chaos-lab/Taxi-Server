@@ -8,12 +8,12 @@ class TaxiCallController
 
   getNearTaxis: (req, res) ->
     taxis = []
-  
+
     User.collection.find { role: 2, state:{$gte: 1}, taxi_state:1 }, (err, cursor)->
-      return res.json { status: 2, message: "database error"  } if err
+      return res.json { status: 4, message: "database error"  } if err
 
       cursor.toArray (err, docs) ->
-        return res.json { status: 2, message: "database error" } if err
+        return res.json { status: 4, message: "database error" } if err
 
         for doc in docs
           if doc.location
@@ -23,9 +23,9 @@ class TaxiCallController
               car_number: doc.car_number
               longitude: doc.location.longitude
               latitude: doc.location.latitude
-  
+
         res.json { status: 0, taxis: taxis }
-  
+
   create: (req, res) ->
     return res.json { status: 2, message: "incorrect data format" } unless req.json_data.driver
 
@@ -33,29 +33,44 @@ class TaxiCallController
       if !doc || doc.state == 0 || doc.taxi_state != 1
          return res.json { status: 3, message: "driver can't accept taxi call for now" }
 
-      Service.uniqueID (id)->
-        data =
-          driver: req.json_data.driver
-          passenger: req.current_user.phone_number
-          state: 1
-          location: req.json_data.location
-          key: req.json_data.key
-          _id: id
+      # only one active service is allowed for a user at the same time
+      Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
+        # cancel existing services
+        if doc
+          Service.collection.update({_id: doc._id}, {$set: {state: -2}})
+          # send cancel message to driver
+          message =
+            receiver: doc.driver
+            type: "call-taxi-cancel"
+            id: doc._id
+            timestamp: new Date().valueOf()
+          Message.collection.update({receiver: message.receiver, id:message.id, type: message.type}, message, {upsert: true})
 
-        Service.create data
+        # create new service
+        Service.uniqueID (id)->
+          data =
+            driver: req.json_data.driver
+            passenger: req.current_user.phone_number
+            state: 1
+            location: req.json_data.location
+            key: req.json_data.key
+            _id: id
+          Service.create data
 
-        message =
-          type: "call-taxi"
-          passenger:
-            phone_number: req.current_user.phone_number
-            nickname:req.current_user.nickname
-          location: req.json_data.location
-          id: id
-          timestamp: new Date().valueOf()
+          # send call-taxi message to driver
+          message =
+            receiver: req.json_data.driver
+            type: "call-taxi"
+            passenger:
+              phone_number: req.current_user.phone_number
+              nickname:req.current_user.nickname
+            location: req.json_data.location
+            id: id
+            timestamp: new Date().valueOf()
+          Message.collection.update({receiver: message.receiver, passenger:message.passenger, type: message.type}, message, {upsert: true})
 
-        User.send(req.json_data.driver, message)
-        res.json { status: 0, id: id }
-  
+          res.json { status: 0, id: id }
+
   reply: (req, res) ->
     return res.json { status: 2, message: "incorrect data format" } unless req.json_data.id
 
@@ -66,14 +81,15 @@ class TaxiCallController
 
       state = if req.json_data.accept then 2 else -1
       Service.collection.update({_id: req.json_data.id}, {$set: {state: state}})
-    
+
       message =
+        receiver: doc.passenger
         type: "call-taxi-reply"
         accept: req.json_data.accept
         key: doc.key
         timestamp: new Date().valueOf()
+      Message.collection.update({receiver: message.receiver, key:message.key, type: message.type}, message, {upsert: true})
 
-      User.send(doc.passenger, message)
       res.json { status: 0 }
 
   cancel: (req, res) ->
@@ -88,13 +104,18 @@ class TaxiCallController
       if !doc || doc.state == 3 || doc.state == -1
         return res.json { status: 3, message: "service can't be cancelled" }
 
+      # update service state
       Service.collection.update({_id: doc._id}, {$set: {state: -2}})
+      # remove call-taxi message if it's not sent
+      Message.collection.remove({receiver: doc.driver, id: doc._id, type: "call-taxi"})
+
       message =
+        receiver: doc.driver
         type: "call-taxi-cancel"
         id: doc._id
         timestamp: new Date().valueOf()
+      Message.collection.update({receiver: message.receiver, id:message.id, type: message.type}, message, {upsert: true})
 
-      User.send(doc.driver, message)
       res.json { status: 0 }
 
   complete: (req, res) ->
@@ -106,11 +127,12 @@ class TaxiCallController
       Service.collection.update({_id: doc._id}, {$set: {state: -2}})
 
       message =
+        receiver: doc.passenger
         type: "call-taxi-complete"
         key: doc.key
         timestamp: new Date().valueOf()
+      Message.collection.update({receiver: message.receiver, key:message.key, type: message.type}, message, {upsert: true})
 
-      User.send(doc.passenger, message)
       res.json { status: 0 }
 
 module.exports = TaxiCallController

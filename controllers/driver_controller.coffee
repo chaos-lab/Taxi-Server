@@ -2,6 +2,7 @@
 
 User = require('../models/user')
 Service = require('../models/service')
+Message = require('../models/message')
 
 class DriverController
 
@@ -76,15 +77,17 @@ class DriverController
       latitude: req.json_data.latitude
     User.collection.update {_id: req.current_user._id}, {$set: {location: loc}}
 
-    message =
-      type: "location-update"
-      phone_number: req.current_user.phone_number
-      location: loc
-      timestamp: new Date().valueOf()
-
     Service.collection.find {driver: req.current_user.phone_number, state: 2}, (err, cursor) ->
       cursor.toArray (err, docs) ->
-        User.send(doc.passenger, message) for doc in docs
+        for doc in docs
+          message =
+            receiver: doc.passenger
+            type: "location-update"
+            phone_number: req.current_user.phone_number
+            location: loc
+            timestamp: new Date().valueOf()
+
+          Message.collection.update({receiver: message.receiver, phone_number: message.phone_number, type: message.type}, message, {upsert: true})
 
     res.json { status: 0 }
 
@@ -96,7 +99,7 @@ class DriverController
     res.json { status: 0 }
   
   refresh: (req, res) ->
-    User.collection.update {_id: req.current_user._id}, {$set: {messages: []}}
-    res.json { status: 0, messages: req.current_user.messages || [] }
+    User.getMessages req.current_user.phone_number, (messages)->
+      res.json { status: 0, messages: messages }
 
 module.exports = DriverController

@@ -1,6 +1,7 @@
 # User collection
 
 mongodb = require('mongodb')
+Message = require('./message')
 
 # driver schema
 # { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: {latitude: 23.2343, longitude: 126.343}, role: 1, created_at: Date, updated_at: Date, last_active_at: Date, car_number: "xxxx", taxi_state: 1 }
@@ -30,4 +31,18 @@ module.exports = User =
       return unless doc
 
       this.collection.update { _id: doc._id }, { $push: {messages: message} }
+
+  getMessages: (phone, fn)
+    Message.collection.find {receiver: phone}, (err, cursor) ->
+      if err
+        console.log("db query error")
+        return res.json { status: 5, message: "db error" }
+
+      cursor.toArray (err, docs) ->
+        messages = []
+        for doc in docs
+          messages.push(doc)
+          Message.collection.remove(doc)
+
+        fn(messages) if fn
 

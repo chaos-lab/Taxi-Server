@@ -11,6 +11,7 @@ server = new mongodb.Server(config.database.host, config.database.port, {})
 ######################################################
 User = require('./models/user')
 Service = require('./models/service')
+Message = require('./models/message')
 
 ######################################################
 # controllers
@@ -35,6 +36,7 @@ app.setupDB = (fn) ->
 
     User.setup(client)
     Service.setup(client)
+    Message.setup(client)
 
     fn(client) if fn
 
