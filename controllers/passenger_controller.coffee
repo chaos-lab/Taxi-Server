@@ -34,15 +34,29 @@ class PassengerController
     unless req.json_data.phone_number && req.json_data.password
       return res.json { status: 2, message: "incorrect data format" }
 
-    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
-      unless doc && req.json_data.password == doc.password && doc.role == 1
+    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, passenger) ->
+      unless passenger && req.json_data.password == passenger.password && passenger.role == 1
         return res.json { status: 2, message: "incorrect credentials" }
 
-      req.session.user_id = doc.phone_number
-      User.collection.update {_id: doc._id}, {$set: {state: 1}}
+      req.session.user_id = passenger.phone_number
 
-      self = { phone_number: doc.phone_number, nickname: doc.nickname }
-      res.json { status: 0, self: self, message: "welcome, #{doc.nickname}" }
+      self = { phone_number: passenger.phone_number, nickname: passenger.nickname }
+      Service.findOne { passenger: passenger.phone_number, state: 2}, (err, service) ->
+        if err
+          return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
+
+        User.collection.findOne {phone_number: service.driver}, (err, driver) ->
+          if err
+            console.log("error: can't find passenger #{service.passenger}")
+            return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
+
+          service.driver = 
+            phone_number: driver.phone_number
+            nickname: driver.nickname
+            location: driver.location
+          self.service = service
+
+          res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
   
   signout: (req, res) ->
     User.collection.update({_id: req.current_user._id}, {$set: {state: 0}})
