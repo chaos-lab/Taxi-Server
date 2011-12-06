@@ -50,7 +50,7 @@ class PassengerController
 
       self = { phone_number: passenger.phone_number, nickname: passenger.nickname }
       Service.collection.findOne { passenger: passenger.phone_number, state: 2}, (err, service) ->
-        if err
+        if err or !service
           self.state = 0
           return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
 

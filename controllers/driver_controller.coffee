@@ -53,7 +53,7 @@ class DriverController
 
       self = { phone_number: driver.phone_number, nickname: driver.nickname, state: driver.taxi_state, car_number: driver.car_number, state: driver.taxi_state }
       Service.collection.findOne { driver: driver.phone_number, state: 2}, (err, service) ->
-        if err
+        if err or !service
           winston.err("driver signin", "database error")
           return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
 
