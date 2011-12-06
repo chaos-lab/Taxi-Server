@@ -65,7 +65,7 @@ class PassengerController
             phone_number: driver.phone_number
             nickname: driver.nickname
             location: driver.location
-          self.state = 1
+          self.state = if service.state == 1 then 1 else 2
 
           # { status: 0|1|2|... [, message: "xxxx"], self:{ nickname:"liufy", phone_number:"13814171931", state: 0|1|2, driver: {car_number:"a186", nickname: "liuq", phone_number: "12345678900"[, latitude: 11.456789, longitude: 211.211985]}}} 
           res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
