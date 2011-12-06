@@ -26,6 +26,8 @@ passenger_controller = new PassengerController()
 TaxiCallController = require('./controllers/taxi_call_controller')
 taxi_call_controller = new TaxiCallController()
 
+# require('./controllers/scheduler')
+
 ######################################################
 # create express
 ######################################################
@@ -94,12 +96,6 @@ app.use (req, res, next) ->
       req.current_user = doc
 
     next()
-
-updateUserState = ->
-  winston.info("update user state every 10s")
-  User.collection.update { last_active_at:{$lt: new Date(new Date().valueOf() - 10000)}, state: 2}  , {$set: {state: 0}}
-
-setInterval(updateUserState, 10000)
 
 # debug routes
 app.get '/', (req, res, next)->
