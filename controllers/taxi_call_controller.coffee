@@ -93,6 +93,8 @@ class TaxiCallController
 
       state = if req.json_data.accept then 2 else -1
       Service.collection.update({_id: req.json_data.id}, {$set: {state: state}})
+      # set taxi state to running
+      User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 2}}) if req.json_data.accept
 
       message =
         receiver: doc.passenger
@@ -141,7 +143,9 @@ class TaxiCallController
       unless doc.state == 2
         winston.warn("Service complete - service can't be completed", doc)
         return res.json { status: 3, message: "only accepted service can be completed" }
-      Service.collection.update({_id: doc._id}, {$set: {state: -2}})
+      Service.collection.update({_id: doc._id}, {$set: {state: 3}})
+      # set taxi state to idle
+      User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 1}})
 
       message =
         receiver: doc.passenger
