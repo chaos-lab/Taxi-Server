@@ -69,6 +69,7 @@ class DriverController
             nickname: passenger.nickname
             location: passenger.location
           self.state = 1
+          self.id = service._id
 
           # { status: 0|1|2|... [, message: "xxxx"], self: {car_number:"xxx", nickname:"liufy", phone_number:"13814171931", state: 0|1, passenger: {nickname:"souriki", phone_number:"13913391280"[, latitude: 11.234567, longitude: 112.678901]}}
           res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
