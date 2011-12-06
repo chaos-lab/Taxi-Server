@@ -55,6 +55,7 @@ class TaxiCallController
             timestamp: new Date().valueOf()
           Message.collection.update({receiver: message.receiver, id:message.id, type: message.type}, message, {upsert: true})
 
+        req.json_data.location = {} unless req.json_data.location
         # create new service
         Service.uniqueID (id)->
           data =
