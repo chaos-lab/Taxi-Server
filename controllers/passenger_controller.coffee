@@ -52,13 +52,13 @@ class PassengerController
       Service.collection.findOne { passenger: passenger.phone_number, state: 2}, (err, service) ->
         if err or !service
           self.state = 0
-          return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
+          return res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
 
         User.collection.findOne {phone_number: service.driver}, (err, driver) ->
           if err or !driver
             winston.warn("can't find driver #{service.driver} for existing service", service)
             self.state = 0
-            return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
+            return res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
 
           self.driver =
             car_number: driver.car_number
