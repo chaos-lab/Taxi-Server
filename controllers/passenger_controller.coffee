@@ -49,7 +49,7 @@ class PassengerController
       req.session.user_id = passenger.phone_number
 
       self = { phone_number: passenger.phone_number, nickname: passenger.nickname }
-      Service.collection.findOne { passenger: passenger.phone_number, state: 2}, (err, service) ->
+      Service.collection.findOne { passenger: passenger.phone_number, $or:[{state: 1}, {state: 2}]}, (err, service) ->
         if err or !service
           self.state = 0
           return res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
