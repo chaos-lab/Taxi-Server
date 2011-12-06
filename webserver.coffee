@@ -26,7 +26,7 @@ passenger_controller = new PassengerController()
 TaxiCallController = require('./controllers/taxi_call_controller')
 taxi_call_controller = new TaxiCallController()
 
-# require('./controllers/scheduler')
+require('./controllers/scheduler')
 
 ######################################################
 # create express
