@@ -51,16 +51,14 @@ class DriverController
 
       req.session.user_id = driver.phone_number
 
-      self = { phone_number: driver.phone_number, nickname: driver.nickname, state: driver.taxi_state, car_number: driver.car_number }
+      self = { phone_number: driver.phone_number, nickname: driver.nickname, state: driver.taxi_state, car_number: driver.car_number, state: driver.taxi_state }
       Service.collection.findOne { driver: driver.phone_number, state: 2}, (err, service) ->
         if err
-          self.state = 0
           winston.err("driver signin", "database error")
           return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
 
         User.collection.findOne {phone_number: service.passenger}, (err, passenger) ->
           if err or !passenger
-            self.state = 0
             winston.warn("can't find passenger #{service.passenger} for existing service", service)
             return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
 
@@ -68,7 +66,6 @@ class DriverController
             phone_number: passenger.phone_number
             nickname: passenger.nickname
             location: passenger.location
-          self.state = 1
           self.id = service._id
 
           # { status: 0|1|2|... [, message: "xxxx"], self: {car_number:"xxx", nickname:"liufy", phone_number:"13814171931", state: 0|1, passenger: {nickname:"souriki", phone_number:"13913391280"[, latitude: 11.234567, longitude: 112.678901]}}

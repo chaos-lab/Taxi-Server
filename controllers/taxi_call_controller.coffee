@@ -43,7 +43,7 @@ class TaxiCallController
          return res.json { status: 3, message: "driver can't accept taxi call for now" }
 
       # only one active service is allowed for a user at the same time
-      Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
+      Service.collection.findOne {passenger: req.current_user.phone_number, $or:[{state:1}, {state:2}]}, (err, doc) ->
         # cancel existing services
         if doc
           Service.collection.update({_id: doc._id}, {$set: {state: -2}})
@@ -55,7 +55,6 @@ class TaxiCallController
             timestamp: new Date().valueOf()
           Message.collection.update({receiver: message.receiver, id:message.id, type: message.type}, message, {upsert: true})
 
-        req.json_data.location = {} unless req.json_data.location
         # create new service
         Service.uniqueID (id)->
           data =

@@ -3,7 +3,7 @@
 mongodb = require('mongodb')
 
 # message schema
-# { receiver: "13814171931", type: "call-taxi-reply", created_at: new Date() [, ...] }
+# { receiver: "13814171931", type: "call-taxi-reply", timestamp: 1235643512432 [, ...] }
 
 module.exports = Message =
   setup: (db) ->
