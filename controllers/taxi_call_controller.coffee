@@ -1,5 +1,7 @@
 # taxi call controller
 
+winston = require('winston')
+
 User = require('../models/user')
 Service = require('../models/service')
 
@@ -10,10 +12,14 @@ class TaxiCallController
     taxis = []
 
     User.collection.find { role: 2, state:{$gte: 1}, taxi_state:1 }, (err, cursor)->
-      return res.json { status: 4, message: "database error"  } if err
+      if err
+        winston.err("Service getNearTaxis", "database error")
+        return res.json { status: 4, message: "database error"  }
 
       cursor.toArray (err, docs) ->
-        return res.json { status: 4, message: "database error" } if err
+        if err
+          winston.err("Service getNearTaxis", "database error")
+          return res.json { status: 4, message: "database error" }
 
         for doc in docs
           if doc.location
@@ -27,10 +33,13 @@ class TaxiCallController
         res.json { status: 0, taxis: taxis }
 
   create: (req, res) ->
-    return res.json { status: 2, message: "incorrect data format" } unless req.json_data.driver
+    unless req.json_data.driver
+      winston.warn("Service create - incorrect data format", req.json_data)
+      return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {phone_number: req.json_data.driver}, (err, doc) ->
       if !doc || doc.state == 0 || doc.taxi_state != 1
+         winston.warn("Service create - driver #{req.json_data.driver} can't accept taxi call for now", doc)
          return res.json { status: 3, message: "driver can't accept taxi call for now" }
 
       # only one active service is allowed for a user at the same time
@@ -72,11 +81,14 @@ class TaxiCallController
           res.json { status: 0, id: id }
 
   reply: (req, res) ->
-    return res.json { status: 2, message: "incorrect data format" } unless req.json_data.id
+    unless req.json_data.id
+      winston.warn("Service reply - incorrect data format", req.json_data)
+      return res.json { status: 2, message: "incorrect data format" }
 
     Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
       # service doesn't exist, already cancelled, etc
       unless doc && doc.state == 1
+        winston.warn("Service reply - service can't be replied", doc)
         return res.json { status: 3, message: "service can't be replied" }
 
       state = if req.json_data.accept then 2 else -1
@@ -94,14 +106,15 @@ class TaxiCallController
 
   cancel: (req, res) ->
     if !req.json_data.id && !req.json_data.key
+      winston.warn("Service cancel - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     query = if req.json_data.id then {_id: req.json_data.id} else {key: req.json_data.key, passenger: req.current_user.phone_number}
-    console.dir query
 
     Service.collection.findOne query, (err, doc) ->
       # can't cancel completed service or rejected service
       if !doc || doc.state == 3 || doc.state == -1
+        winston.warn("Service reply - service can't be cancelled", doc)
         return res.json { status: 3, message: "service can't be cancelled" }
 
       # update service state
@@ -119,11 +132,15 @@ class TaxiCallController
       res.json { status: 0 }
 
   complete: (req, res) ->
-    return res.json { status: 2, message: "incorrect data format" } unless req.json_data.id
+    unless req.json_data.id
+      winston.warn("Service complete - incorrect data format", req.json_data)
+      return res.json { status: 2, message: "incorrect data format" }
 
     Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
       # can only complete accepted service
-      return res.json { status: 3, message: "only accepted service can be completed" } unless doc.state == 2
+      unless doc.state == 2
+        winston.warn("Service complete - service can't be completed", doc)
+        return res.json { status: 3, message: "only accepted service can be completed" }
       Service.collection.update({_id: doc._id}, {$set: {state: -2}})
 
       message =

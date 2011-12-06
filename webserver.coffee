@@ -1,4 +1,5 @@
 express = require('express')
+winston = require('winston')
 
 ######################################################
 # mongodb setup
@@ -43,7 +44,7 @@ app.setupDB = (fn) ->
 app.start = ->
   app.listen config.webserver.port, ->
     addr = app.address()
-    console.log('app listening on http://' + addr.address + ':' + addr.port)
+    winston.info('app listening on http://' + addr.address + ':' + addr.port)
 
 ######################################################
 # configurations
@@ -58,11 +59,23 @@ app.configure ->
     showStack : true
 
 app.configure 'development', 'production', ->
-  app.use(express.logger())
+  # for logging
+  winston.add(winston.transports.File, { filename: "#{process.env.NODE_ENV}.log" })
+  # stub winston to use with logger middleware
+  winston.write = (data) -> winston.info(data)
+
+  app.use(express.logger({stream: winston}))
+
+  # logging params & response
   app.use (req, res, next) ->
     res.on "finish", ->
-      console.dir(req.json_data) if req.json_data
-      console.log("\n")
+      winston.info("params:", req.json_data) if req.json_data
+
+    stub = res.json
+    res.json = (data) ->
+      winston.info("response:", data)
+      stub.apply(res, [data])
+
     next()
 
 ######################################################
@@ -83,6 +96,7 @@ app.use (req, res, next) ->
     next()
 
 updateUserState = ->
+  winston.info("update user state every 10s")
   User.collection.update { last_active_at:{$lt: new Date(new Date().valueOf() - 10000)}, state: 2}  , {$set: {state: 0}}
 
 setInterval(updateUserState, 10000)

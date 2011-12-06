@@ -9,5 +9,6 @@
       , "coffee-script": "1.1.2"
       , "tobi": "0.3.2"
       , "vows": "0.6.0"
+      , "winston": "0.5.9"
     }
 }

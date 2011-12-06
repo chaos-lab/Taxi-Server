@@ -1,5 +1,7 @@
 # controllers for passenger
 
+winston = require('winston')
+
 User = require('../models/user')
 Service = require('../models/service')
 Message = require('../models/message')
@@ -12,14 +14,16 @@ class PassengerController
     if (req.current_user && req.current_user.role == 1)
       next()
     else
-      console.log('Unauthorized')
+      winston.warn("passenger", "Unauthorized driver access to #{req.url}")
       res.json { status: 1, message: 'Unauthorized' }
 
   signup: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname
+      winston.warn("passenger signup - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
+      winston.warn("passenger signup", "phone_number already registered:", req.json_data)
       return res.json { status: 3, message: "phone_number already registered." } if doc
 
       data =
@@ -34,25 +38,27 @@ class PassengerController
   
   signin: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password
+      winston.warn("passenger signin - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {phone_number: req.json_data.phone_number}, (err, passenger) ->
       unless passenger && req.json_data.password == passenger.password && passenger.role == 1
+        winston.warn("passenger signin - incorrect credential", req.json_data)
         return res.json { status: 2, message: "incorrect credentials" }
 
       req.session.user_id = passenger.phone_number
 
       self = { phone_number: passenger.phone_number, nickname: passenger.nickname }
-      Service.findOne { passenger: passenger.phone_number, state: 2}, (err, service) ->
+      Service.collection.findOne { passenger: passenger.phone_number, state: 2}, (err, service) ->
         if err
           return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
 
         User.collection.findOne {phone_number: service.driver}, (err, driver) ->
-          if err
-            console.log("error: can't find passenger #{service.passenger}")
+          if err or !driver
+            winston.warn("can't find driver #{service.driver} for existing service", service)
             return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
 
-          service.driver = 
+          service.driver =
             phone_number: driver.phone_number
             nickname: driver.nickname
             location: driver.location
@@ -67,6 +73,7 @@ class PassengerController
   
   updateLocation: (req, res) ->
     unless req.json_data.latitude && req.json_data.longitude
+      winston.warn("passenger updateLocation - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     loc =

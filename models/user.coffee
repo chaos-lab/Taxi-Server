@@ -32,7 +32,7 @@ module.exports = User =
 
       this.collection.update { _id: doc._id }, { $push: {messages: message} }
 
-  getMessages: (phone, fn)
+  getMessages: (phone, fn)->
     Message.collection.find {receiver: phone}, (err, cursor) ->
       cursor.toArray (err, docs) ->
         messages = []

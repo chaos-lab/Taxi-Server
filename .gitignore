@@ -1,6 +1,7 @@
 # global
 *.swp
 *.bak
+*.log
 
 # server
 node_modules
