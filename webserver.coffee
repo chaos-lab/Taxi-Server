@@ -62,7 +62,8 @@ app.configure ->
 
 app.configure 'development', 'production', ->
   # for logging
-  winston.add(winston.transports.File, { filename: "#{process.env.NODE_ENV}.log" })
+  winston.add(winston.transports.File, { filename: "#{process.env.NODE_ENV}.log", handleExceptions: true })
+  winston.handleExceptions()
   # stub winston to use with logger middleware
   winston.write = (data) -> winston.info(data)
 
