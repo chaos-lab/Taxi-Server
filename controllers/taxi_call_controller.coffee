@@ -4,6 +4,7 @@ winston = require('winston')
 
 User = require('../models/user')
 Service = require('../models/service')
+Message = require('../models/message')
 
 class TaxiCallController
   constructor: ->
