@@ -22,9 +22,14 @@ class DriverController
       winston.warn("driver signup - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
-      winston.warn("driver signup - phone_number already registered:", req.json_data)
-      return res.json { status: 3, message: "phone_number already registered." } if doc
+    User.collection.findOne {$or: [{phone_number: req.json_data.phone_number}, {nickname: req.json_data.nickname}]}, (err, doc) ->
+      if doc
+        if doc.phone_number == req.json_data.phone_number
+          winston.warn("driver signup - phone_number already registered:", req.json_data)
+          return res.json { status: 101, message: "phone_number already registered" }
+        else
+          winston.warn("driver signup - nickname is already taken:", req.json_data)
+          return res.json { status: 102, message: "nickname is already taken" }
 
       data =
         phone_number: req.json_data.phone_number
@@ -47,14 +52,35 @@ class DriverController
     User.collection.findOne {phone_number: req.json_data.phone_number}, (err, driver) ->
       unless driver && req.json_data.password == driver.password && driver.role == 2
         winston.warn("driver signin - incorrect credential", req.json_data)
-        return res.json { status: 3, message: "incorrect credential" }
+        return res.json { status: 101, message: "incorrect credential" }
 
+      # set session info
       req.session.user_id = driver.phone_number
 
+      # send taxi-call of initiated service to driver
+      Service.collection.find({ driver: driver.phone_number, state: 1 }).toArray (err, docs) ->
+        if err
+          winston.warn("driver signin - database error")
+          return
+
+        for doc in docs
+          User.collection.findOne {phone_number: doc.passenger}, (err, passenger) ->
+            message =
+              receiver: doc.driver
+              type: "call-taxi"
+              passenger:
+                phone_number: passenger.phone_number
+                nickname: passenger.nickname
+              origin: doc.origin
+              destination: doc.destination
+              id: doc._id
+              timestamp: new Date().valueOf()
+            Message.collection.update({receiver: message.receiver, passenger:message.passenger, type: message.type}, message, {upsert: true})
+
+      # find accepted service, and include the info in response
       self = { phone_number: driver.phone_number, nickname: driver.nickname, state: driver.taxi_state, car_number: driver.car_number, state: driver.taxi_state }
-      Service.collection.findOne { driver: driver.phone_number, $or:[{state: 1}, {state: 2}]}, (err, service) ->
-        if err or !service
-          winston.warn("driver signin", "database error")
+      Service.collection.findOne { driver: driver.phone_number, state: 2 }, (err, service) ->
+        if !service
           return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
 
         User.collection.findOne {phone_number: service.passenger}, (err, passenger) ->
@@ -68,7 +94,6 @@ class DriverController
             location: passenger.location
           self.id = service._id
 
-          # { status: 0|1|2|... [, message: "xxxx"], self: {car_number:"xxx", nickname:"liufy", phone_number:"13814171931", state: 0|1, passenger: {nickname:"souriki", phone_number:"13913391280"[, latitude: 11.234567, longitude: 112.678901]}}
           res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
   
   signout: (req, res) ->
@@ -86,17 +111,20 @@ class DriverController
       latitude: req.json_data.latitude
     User.collection.update {_id: req.current_user._id}, {$set: {location: loc}}
 
-    Service.collection.find {driver: req.current_user.phone_number, state: 2}, (err, cursor) ->
-      cursor.toArray (err, docs) ->
-        for doc in docs
-          message =
-            receiver: doc.passenger
-            type: "location-update"
-            phone_number: req.current_user.phone_number
-            location: loc
-            timestamp: new Date().valueOf()
+    Service.collection.find({driver: req.current_user.phone_number, state: 2}).toArray (err, docs) ->
+      if err
+        winston.warn("driver updateLocation - database error")
+        return res.json { status: 3, message: "database error" }
 
-          Message.collection.update({receiver: message.receiver, phone_number: message.phone_number, type: message.type}, message, {upsert: true})
+      for doc in docs
+        message =
+          receiver: doc.passenger
+          type: "location-update"
+          phone_number: req.current_user.phone_number
+          location: loc
+          timestamp: new Date().valueOf()
+
+        Message.collection.update({receiver: message.receiver, phone_number: message.phone_number, type: message.type}, message, {upsert: true})
 
     res.json { status: 0 }
 

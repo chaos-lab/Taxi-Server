@@ -12,24 +12,19 @@ class TaxiCallController
   getNearTaxis: (req, res) ->
     taxis = []
 
-    User.collection.find { role: 2, state:{$gte: 1}, taxi_state:1 }, (err, cursor)->
+    User.collection.find({ role:2, state:{$gte: 1}, taxi_state:1 }).toArray (err, docs)->
       if err
-        winston.err("Service getNearTaxis", "database error")
-        return res.json { status: 4, message: "database error"  }
+        winston.warn("Service getNearTaxis - database error")
+        return res.json { status: 3, message: "database error" }
 
-      cursor.toArray (err, docs) ->
-        if err
-          winston.err("Service getNearTaxis", "database error")
-          return res.json { status: 4, message: "database error" }
-
-        for doc in docs
-          if doc.location
-            taxis.push
-              phone_number: doc.phone_number
-              nickname: doc.nickname
-              car_number: doc.car_number
-              longitude: doc.location.longitude
-              latitude: doc.location.latitude
+      for doc in docs
+        if doc.location
+          taxis.push
+            phone_number: doc.phone_number
+            nickname: doc.nickname
+            car_number: doc.car_number
+            longitude: doc.location.longitude
+            latitude: doc.location.latitude
 
         res.json { status: 0, taxis: taxis }
 
@@ -41,7 +36,7 @@ class TaxiCallController
     User.collection.findOne {phone_number: req.json_data.driver}, (err, doc) ->
       if !doc || doc.state == 0 || doc.taxi_state != 1
          winston.warn("Service create - driver #{req.json_data.driver} can't accept taxi call for now", doc)
-         return res.json { status: 3, message: "driver can't accept taxi call for now" }
+         return res.json { status: 101, message: "driver can't accept taxi call for now" }
 
       # only one active service is allowed for a user at the same time
       Service.collection.findOne {passenger: req.current_user.phone_number, $or:[{state:1}, {state:2}]}, (err, doc) ->
@@ -62,7 +57,8 @@ class TaxiCallController
             driver: req.json_data.driver
             passenger: req.current_user.phone_number
             state: 1
-            location: req.json_data.location
+            origin: (req.json_data.origin || req.current_user.location)
+            destination: req.json_data.destination
             key: req.json_data.key
             _id: id
           Service.create data
@@ -74,7 +70,8 @@ class TaxiCallController
             passenger:
               phone_number: req.current_user.phone_number
               nickname:req.current_user.nickname
-            location: req.json_data.location
+            origin: req.json_data.origin
+            destination: req.json_data.destination
             id: id
             timestamp: new Date().valueOf()
           Message.collection.update({receiver: message.receiver, passenger:message.passenger, type: message.type}, message, {upsert: true})
@@ -90,10 +87,10 @@ class TaxiCallController
       # service doesn't exist, already cancelled, etc
       unless doc && doc.state == 1
         winston.warn("Service reply - service can't be replied", doc)
-        return res.json { status: 3, message: "service can't be replied" }
+        return res.json { status: 101, message: "service can't be replied" }
 
       state = if req.json_data.accept then 2 else -1
-      Service.collection.update({_id: req.json_data.id}, {$set: {state: state}})
+      Service.collection.update({_id: req.json_data.id}, {$set: {state: state, updated_at: new Date()}})
       # set taxi state to running
       User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 2}}) if req.json_data.accept
 
@@ -118,10 +115,10 @@ class TaxiCallController
       # can't cancel completed service or rejected service
       if !doc || doc.state == 3 || doc.state == -1
         winston.warn("Service reply - service can't be cancelled", doc)
-        return res.json { status: 3, message: "service can't be cancelled" }
+        return res.json { status: 101, message: "service can't be cancelled" }
 
       # update service state
-      Service.collection.update({_id: doc._id}, {$set: {state: -2}})
+      Service.collection.update({_id: doc._id}, {$set: {state: -2, updated_at: new Date()}})
       # remove call-taxi message if it's not sent
       Message.collection.remove({receiver: doc.driver, id: doc._id, type: "call-taxi"})
 
@@ -143,8 +140,8 @@ class TaxiCallController
       # can only complete accepted service
       unless doc.state == 2
         winston.warn("Service complete - service can't be completed", doc)
-        return res.json { status: 3, message: "only accepted service can be completed" }
-      Service.collection.update({_id: doc._id}, {$set: {state: 3}})
+        return res.json { status: 101, message: "only accepted service can be completed" }
+      Service.collection.update({_id: doc._id}, {$set: {state: 3, updated_at: new Date()}})
       # set taxi state to idle
       User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 1}})
 
