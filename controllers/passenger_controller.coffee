@@ -22,7 +22,7 @@ class PassengerController
       winston.warn("passenger signup - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, doc) ->
+    User.collection.findOne {$or: [{phone_number: req.json_data.phone_number}, {nickname: req.json_data.nickname}]}, (err, doc) ->
       if doc
         if doc.phone_number == req.json_data.phone_number
           winston.warn("driver signup - phone_number already registered:", req.json_data)

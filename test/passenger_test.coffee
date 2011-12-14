@@ -83,6 +83,30 @@ suite.addBatch
       assert.equal(res.body.status, 0)
 
 suite.addBatch
+  "signup with duplicate phone number":
+    topic: (e, rs)->
+      data = { phone_number: "passenger1", password: "123456", nickname: "zhang" }
+      data = JSON.stringify(data)
+      browser.post '/passenger/signup', { body: 'json_data=' + data}, this.callback
+      return
+
+    'should fail': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 101)
+
+suite.addBatch
+  "signup with duplicate nickname":
+    topic: (e, rs)->
+      data = { phone_number: "159234843234", password: "123456", nickname: "liufy" }
+      data = JSON.stringify(data)
+      browser.post '/passenger/signup', { body: 'json_data=' + data}, this.callback
+      return
+
+    'should fail': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 102)
+
+suite.addBatch
   "signin with incorrect credentials":
     topic: ->
       data = { phone_number: "passenger1", password: "abcd234" }
