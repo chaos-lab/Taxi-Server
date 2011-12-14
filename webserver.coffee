@@ -26,7 +26,6 @@ passenger_controller = new PassengerController()
 TaxiCallController = require('./controllers/taxi_call_controller')
 taxi_call_controller = new TaxiCallController()
 
-require('./controllers/scheduler')
 
 ######################################################
 # create express
@@ -60,14 +59,19 @@ app.configure ->
     dumpExceptions: true
     showStack : true
 
+app.configure 'test', ->
+  winston.remove(winston.transports.Console)
+
 app.configure 'development', 'production', ->
   # for logging
   winston.add(winston.transports.File, { filename: "#{process.env.NODE_ENV}.log", handleExceptions: true })
   winston.handleExceptions()
   # stub winston to use with logger middleware
   winston.write = (data) -> winston.info(data)
-
   app.use(express.logger({stream: winston}))
+
+  # don't use scheduler while test
+  require('./controllers/scheduler')
 
   # logging params & response
   app.use (req, res, next) ->

@@ -1,3 +1,4 @@
+events = require("events")
 tobi = require('tobi')
 assert = require('assert')
 should = require('should')
@@ -8,164 +9,172 @@ helper = require('./helper')
 app = require('../webserver')
 browser = tobi.createBrowser(app)
 
-batch1 =
-  "before signin":
+# Batches  are executed sequentially.
+# Contexts are executed in parallel.
+suite = vows.describe('passenger test')
+
+suite.addBatch
+  "setup - ":
     topic: ->
       # app.setupDB(this.callback) doesn't work!!!
       self = this
-      app.setupDB (db)->
-        helper.cleanDB(db, self.callback)
+      app.setupDB (db) ->
+        helper.cleanDB db, ->
+          self.callback()
 
-    'visists hello world':
+      # tells vows it's async, or coffee will return last value, which breaks the framework.
+      return
+
+    'visits hello world':
       topic: ->
         browser.get('/', {}, this.callback)
-        return undefined
+        return
 
       'should succeed': (res, $) ->
         res.should.have.status(200)
-        assert.equal(0, res.body.status)
+        assert.equal(res.body.status, 0)
 
+suite.addBatch
+  'before signin - ':
     'signup with incomplete info':
-      topic: ->
+      topic: (e, res)->
         data = { phone_number: "passenger1", password: "123456" }
         data = JSON.stringify(data)
-        browser.post('/passenger/signup', { body: 'json_data=' + data}, this.callback)
-        return undefined
+        self = this
+        browser.post '/passenger/signup', { body: 'json_data=' + data}, this.callback
+        return
+  
+      'should fail': (res, $) ->
+        res.should.have.status(200)
+        assert.equal(res.body.status, 2)
+  
+    'update location before signin':
+      topic: (e, res)->
+        data = { latitude: 34.545, longitude: 118.324 }
+        data = JSON.stringify(data)
+        browser.post '/passenger/location/update', { body: 'json_data=' + data}, this.callback
+        return
+  
+      'should fail': (res, $) ->
+        res.should.have.status(200)
+        assert.equal(res.body.status, 1)
+  
+    "signin with inexistent account":
+      topic: (e, res)->
+        data = { phone_number: "xxxx", password: "abcd234" }
+        data = JSON.stringify(data)
+        browser.post '/passenger/signin', { body: 'json_data=' + data}, this.callback
+        return
+  
+      'should fail': (res, $) ->
+        res.should.have.status(200)
+        assert.equal(res.body.status, 101)
+
+suite.addBatch
+  "signup with complete info":
+    topic: (e, rs)->
+      data = { phone_number: "passenger1", password: "123456", nickname: "liufy" }
+      data = JSON.stringify(data)
+      browser.post '/passenger/signup', { body: 'json_data=' + data}, this.callback
+      return
+
+    'should succeed': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 0)
+
+suite.addBatch
+  "signin with incorrect credentials":
+    topic: ->
+      data = { phone_number: "passenger1", password: "abcd234" }
+      data = JSON.stringify(data)
+      browser.post('/passenger/signin', { body: 'json_data=' + data}, this.callback)
+      return
+
+    'should fail': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 101)
+
+suite.addBatch
+  "signin with correct credentials":
+    topic: ->
+      data = { phone_number: "passenger1", password: "123456" }
+      data = JSON.stringify(data)
+      browser.post('/passenger/signin', { body: 'json_data=' + data}, this.callback)
+      return
+
+    'should succeed': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 0)
+      assert.isObject(res.body.self)
+      assert.equal('liufy', res.body.self.nickname)
+
+suite.addBatch
+  "after signin - ":
+    'visit driver path':
+      topic: ->
+        data = { latitude: 34.545, longitude: 118.324 }
+        data = JSON.stringify(data)
+        browser.post('/driver/location/update', { body: 'json_data=' + data}, this.callback)
+        return
 
       'should fail': (res, $) ->
         res.should.have.status(200)
-        assert.equal(1, res.body.status)
+        assert.equal(res.body.status, 1)
 
-    'update location before signin':
+    'update location':
       topic: ->
         data = { latitude: 34.545, longitude: 118.324 }
         data = JSON.stringify(data)
         browser.post('/passenger/location/update', { body: 'json_data=' + data}, this.callback)
-        return undefined
-
-      'should fail': (res, $) ->
-        res.should.have.status(200)
-        assert.equal(1, res.body.status)
-
-    "signin with inexistent account":
-      topic: ->
-        data = { phone_number: "xxxx", password: "abcd234" }
-        data = JSON.stringify(data)
-        browser.post('/passenger/signin', { body: 'json_data=' + data}, this.callback)
-        return undefined
-
-      'should fail': (res, $) ->
-        res.should.have.status(200)
-        assert.equal(1, res.body.status)
-
-    "signup with complete info":
-      topic: ->
-        data = { phone_number: "passenger1", password: "123456", nickname: "liufy" }
-        data = JSON.stringify(data)
-        browser.post('/passenger/signup', { body: 'json_data=' + data}, this.callback)
-        return undefined
+        return
 
       'should succeed': (res, $) ->
         res.should.have.status(200)
-        assert.equal(0, res.body.status)
+        assert.equal(res.body.status, 0)
 
-batch2 =
-  "after signin":
-    "signin with incorrect credentials":
+    'refresh':
       topic: ->
-        data = { phone_number: "passenger1", password: "abcd234" }
-        data = JSON.stringify(data)
-        browser.post('/passenger/signin', { body: 'json_data=' + data}, this.callback)
-        return undefined
-
-      'should fail': (res, $) ->
-        res.should.have.status(200)
-        assert.equal(1, res.body.status)
-
-    "signin with correct credentials":
-      topic: ->
-        data = { phone_number: "passenger1", password: "123456" }
-        data = JSON.stringify(data)
-        browser.post('/passenger/signin', { body: 'json_data=' + data}, this.callback)
-        return undefined
+        browser.get('/passenger/refresh', {}, this.callback)
+        return
 
       'should succeed': (res, $) ->
         res.should.have.status(200)
-        assert.equal(0, res.body.status)
-        assert.isObject(res.body.self)
-        assert.equal('liufy', res.body.self.nickname)
+        assert.equal(res.body.status, 0)
+        assert.isArray(res.body.messages)
 
-      'visit driver path':
-        topic: ->
-          data = { latitude: 34.545, longitude: 118.324 }
-          data = JSON.stringify(data)
-          browser.post('/driver/location/update', { body: 'json_data=' + data}, this.callback)
-          return undefined
-
-        'should fail': (res, $) ->
-          res.should.have.status(200)
-          assert.equal(1, res.body.status)
-
-      'update location':
-        topic: ->
-          data = { latitude: 34.545, longitude: 118.324 }
-          data = JSON.stringify(data)
-          browser.post('/passenger/location/update', { body: 'json_data=' + data}, this.callback)
-          return undefined
-
-        'should succeed': (res, $) ->
-          res.should.have.status(200)
-          assert.equal(0, res.body.status)
-
-      'refresh':
-        topic: ->
-          browser.get('/passenger/refresh', {}, this.callback)
-          return undefined
-
-        'should succeed': (res, $) ->
-          res.should.have.status(200)
-          assert.equal(0, res.body.status)
-          assert.isArray(0, res.body.messages)
-
-      'get near taxi':
-        topic: ->
-          data = { latitude: 34.545, longitude: 118.324 }
-          data = JSON.stringify(data)
-          browser.get('/taxi/near', { body: 'json_data=' + data}, this.callback)
-          return undefined
-
-        'should succeed': (res, $) ->
-          res.should.have.status(200)
-          assert.equal(0, res.body.status)
-          assert.isArray(0, res.body.taxis)
-
-batch3 =
-  "after signout":
-    'signout':
+    'get near taxi':
       topic: ->
-        browser.post('/passenger/signout', {}, this.callback)
-        return undefined
+        data = { latitude: 34.545, longitude: 118.324 }
+        data = JSON.stringify(data)
+        browser.get('/taxi/near', { body: 'json_data=' + data}, this.callback)
+        return
+
+      'should succeed': (res, $) ->
+        res.should.have.status(200)
+        assert.equal(res.body.status, 0)
+        assert.isArray(res.body.taxis)
+
+suite.addBatch
+  'signout':
+    topic: ->
+      browser.post('/passenger/signout', {}, this.callback)
+      return
   
-      'should succeed': (res, $) ->
-        res.should.have.status(200)
-        assert.equal(0, res.body.status)
+    'should succeed': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 0)
 
-      'update location after signout':
-        topic: ->
-          data = { latitude: 34.545, longitude: 118.324 }
-          data = JSON.stringify(data)
-          browser.post('/passenger/location/update', { body: 'json_data=' + data}, this.callback)
-          return undefined
+suite.addBatch
+  'update location after signout':
+    topic: ->
+      data = { latitude: 34.545, longitude: 118.324 }
+      data = JSON.stringify(data)
+      browser.post('/passenger/location/update', { body: 'json_data=' + data}, this.callback)
+      return
 
-        'should fail': (res, $) ->
-          res.should.have.status(200)
-          assert.equal(1, res.body.status)
+    'should fail': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 1)
 
-# Batches  are executed sequentially.
-# Contexts are executed in parallel.
-suite = vows.describe('passenger test')
-suite.addBatch(batch1)
-suite.addBatch(batch2)
-suite.addBatch(batch3)
 suite.export(module)
 

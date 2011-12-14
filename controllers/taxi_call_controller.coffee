@@ -26,7 +26,7 @@ class TaxiCallController
             longitude: doc.location.longitude
             latitude: doc.location.latitude
 
-        res.json { status: 0, taxis: taxis }
+      res.json { status: 0, taxis: taxis }
 
   create: (req, res) ->
     unless req.json_data.driver
@@ -98,6 +98,7 @@ class TaxiCallController
         receiver: doc.passenger
         type: "call-taxi-reply"
         accept: req.json_data.accept
+        id: doc._id
         key: doc.key
         timestamp: new Date().valueOf()
       Message.collection.update({receiver: message.receiver, key:message.key, type: message.type}, message, {upsert: true})
