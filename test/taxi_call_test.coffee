@@ -12,7 +12,7 @@ driver = tobi.createBrowser(app)
 
 # Batches  are executed sequentially.
 # Contexts are executed in parallel.
-suite = vows.describe('taxi call test')
+suite = vows.describe('taxi call & cancel test')
 
 suite.addBatch
   "setup":
@@ -121,6 +121,42 @@ suite.addBatch
       assert.isTrue res.body.messages.length > 0
       assert.equal driver.service_id, res.body.messages[0].id
       assert.equal res.body.messages[0].type, "call-taxi-cancel"
+
+suite.addBatch
+  'should be unable for driver to reply taxi call after cancelled':
+    topic: (res, $)->
+      data = { id: driver.service_id, accept: false }
+      data = JSON.stringify(data)
+      driver.post '/service/reply', { body: 'json_data=' + data}, this.callback
+      return
+  
+    'should fail': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 101)
+
+suite.addBatch
+  'should be unable for passenger to cancel taxi call after cancelled':
+    topic: (res, $)->
+      data = { id: driver.service_id }
+      data = JSON.stringify(data)
+      passenger.post '/service/cancel', { body: 'json_data=' + data}, this.callback
+      return
+    
+    'should fail': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 101)
+
+suite.addBatch
+  'should be unable for driver to complete taxi call after cancelled':
+    topic: (res, $)->
+      data = { id: driver.service_id }
+      data = JSON.stringify(data)
+      driver.post '/service/complete', { body: 'json_data=' + data}, this.callback
+      return
+  
+    'should fail': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 101)
 
 suite.export(module)
 

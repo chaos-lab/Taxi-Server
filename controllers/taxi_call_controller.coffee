@@ -114,7 +114,7 @@ class TaxiCallController
 
     Service.collection.findOne query, (err, doc) ->
       # can't cancel completed service or rejected service
-      if !doc || doc.state == 3 || doc.state == -1
+      if !doc || (doc.state != 2 && doc.state != 1)
         winston.warn("Service reply - service can't be cancelled", doc)
         return res.json { status: 101, message: "service can't be cancelled" }
 
