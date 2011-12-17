@@ -13,10 +13,14 @@ server = new mongodb.Server(config.database.host, config.database.port, {})
 User = require('./models/user')
 Service = require('./models/service')
 Message = require('./models/message')
+Evaluation = require('./models/evaluation')
 
 ######################################################
 # controllers
 ######################################################
+AuthorizationController = require('./controllers/authorization_controller')
+authorization_controller = new AuthorizationController()
+
 DriverController = require('./controllers/driver_controller')
 driver_controller = new DriverController()
 
@@ -39,6 +43,7 @@ app.setupDB = (fn) ->
     User.setup(client)
     Service.setup(client)
     Message.setup(client)
+    Evaluation.setup(client)
 
     fn(client) if fn
 
@@ -111,26 +116,29 @@ app.get '/', (req, res, next)->
 ######################################################
 app.post '/driver/signup',          driver_controller.signup
 app.post '/driver/signin',          driver_controller.signin
-app.post '/driver/signout',         driver_controller.restrict_to_driver,   driver_controller.signout
-app.post '/driver/location/update', driver_controller.restrict_to_driver,   driver_controller.updateLocation
-app.post '/driver/taxi/update',     driver_controller.restrict_to_driver,   driver_controller.updateState
-app.get  '/driver/refresh',         driver_controller.restrict_to_driver,   driver_controller.refresh
+app.post '/driver/signout',         AuthorizationController.restrict_to_driver,   driver_controller.signout
+app.post '/driver/location/update', AuthorizationController.restrict_to_driver,   driver_controller.updateLocation
+app.post '/driver/taxi/update',     AuthorizationController.restrict_to_driver,   driver_controller.updateState
+app.get  '/driver/refresh',         AuthorizationController.restrict_to_driver,   driver_controller.refresh
 
 ######################################################
 # passenger routes
 ######################################################
 app.post '/passenger/signup',           passenger_controller.signup
 app.post '/passenger/signin',           passenger_controller.signin
-app.post '/passenger/signout',          passenger_controller.restrict_to_passenger,   passenger_controller.signout
-app.post '/passenger/location/update',  passenger_controller.restrict_to_passenger,   passenger_controller.updateLocation
-app.get  '/passenger/refresh',          passenger_controller.restrict_to_passenger,   passenger_controller.refresh
+app.post '/passenger/signout',          AuthorizationController.restrict_to_passenger,   passenger_controller.signout
+app.post '/passenger/location/update',  AuthorizationController.restrict_to_passenger,   passenger_controller.updateLocation
+app.get  '/passenger/refresh',          AuthorizationController.restrict_to_passenger,   passenger_controller.refresh
 
 ######################################################
 # taxi call routes
 ######################################################
-app.get  '/taxi/near',           passenger_controller.restrict_to_passenger, taxi_call_controller.getNearTaxis
-app.post '/service/create',      passenger_controller.restrict_to_passenger, taxi_call_controller.create
-app.post '/service/reply',       driver_controller.restrict_to_driver,       taxi_call_controller.reply
-app.post '/service/cancel',      passenger_controller.restrict_to_passenger, taxi_call_controller.cancel
-app.post '/service/complete',    driver_controller.restrict_to_driver,       taxi_call_controller.complete
+app.get  '/taxi/near',                AuthorizationController.restrict_to_passenger,    taxi_call_controller.getNearTaxis
+app.post '/service/create',           AuthorizationController.restrict_to_passenger,    taxi_call_controller.create
+app.post '/service/reply',            AuthorizationController.restrict_to_driver,       taxi_call_controller.reply
+app.post '/service/cancel',           AuthorizationController.restrict_to_passenger,    taxi_call_controller.cancel
+app.post '/service/complete',         AuthorizationController.restrict_to_driver,       taxi_call_controller.complete
+app.post '/service/evaluate',         AuthorizationController.restrict_to_user,         taxi_call_controller.evaluate
+app.get  '/service/evaluations',      AuthorizationController.restrict_to_user,         taxi_call_controller.getEvaluations
+app.get  '/service/user/evaluations', AuthorizationController.restrict_to_user,         taxi_call_controller.getUserEvaluations
 

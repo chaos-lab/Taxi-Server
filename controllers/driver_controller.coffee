@@ -10,13 +10,6 @@ class DriverController
 
   constructor: ->
 
-  restrict_to_driver:  (req, res, next) ->
-    if (req.current_user && req.current_user.role == 2)
-      next()
-    else
-      winston.warn("driver", "Unauthorized driver access to #{req.url}")
-      res.json { status: 1, message: 'Unauthorized' }
-  
   signup: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname && req.json_data.car_number
       winston.warn("driver signup - incorrect data format", req.json_data)
@@ -61,7 +54,7 @@ class DriverController
       Service.collection.find({ driver: driver.phone_number, state: 1 }).toArray (err, docs) ->
         if err
           winston.warn("driver signin - database error")
-          return
+          return res.json { status: 3, message: "database error" }
 
         for doc in docs
           User.collection.findOne {phone_number: doc.passenger}, (err, passenger) ->

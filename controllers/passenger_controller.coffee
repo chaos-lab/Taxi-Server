@@ -10,13 +10,6 @@ class PassengerController
 
   constructor: ->
 
-  restrict_to_passenger: (req, res, next) ->
-    if (req.current_user && req.current_user.role == 1)
-      next()
-    else
-      winston.warn("passenger", "Unauthorized driver access to #{req.url}")
-      res.json { status: 1, message: 'Unauthorized' }
-
   signup: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname
       winston.warn("passenger signup - incorrect data format", req.json_data)
