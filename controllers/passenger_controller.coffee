@@ -70,7 +70,9 @@ class PassengerController
             car_number: driver.car_number
             phone_number: driver.phone_number
             nickname: driver.nickname
-            location: driver.location
+            location:
+              longitude: driver.location[0]
+              latitude: driver.location[1]
           self.state = if service.state == 1 then 1 else 2
 
           # { status: 0|1|2|... [, message: "xxxx"], self:{ nickname:"liufy", phone_number:"13814171931", state: 0|1|2, driver: {car_number:"a186", nickname: "liuq", phone_number: "12345678900"[, latitude: 11.456789, longitude: 211.211985]}}} 
@@ -86,10 +88,7 @@ class PassengerController
       winston.warn("passenger updateLocation - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    loc =
-      longitude: req.json_data.longitude
-      latitude: req.json_data.latitude
-
+    loc = [req.json_data.longitude, req.json_data.latitude]
     User.collection.update {_id: req.current_user._id}, {$set: {location: loc}}
 
     Service.collection.find({passenger: req.current_user.phone_number, state: 2}).toArray (err, docs) ->
@@ -102,7 +101,9 @@ class PassengerController
           receiver: doc.driver
           type: "location-update"
           phone_number: req.current_user.phone_number
-          location: loc
+          location:
+            longitude: req.json_data.longitude
+            latitude: req.json_data.latitude
           timestamp: new Date().valueOf()
 
         Message.collection.update({receiver: message.receiver, phone_number: message.phone_number, type: message.type}, message, {upsert: true})

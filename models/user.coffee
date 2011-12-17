@@ -4,10 +4,10 @@ mongodb = require('mongodb')
 Message = require('./message')
 
 # driver schema
-# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: {latitude: 23.2343, longitude: 126.343}, role: 1, created_at: Date, updated_at: Date, last_active_at: Date, car_number: "xxxx", taxi_state: 1 }
+# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: 1, created_at: Date, updated_at: Date, last_active_at: Date, car_number: "xxxx", taxi_state: 1 }
 
 # passenger
-# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: {latitude: 23.2343, longitude: 126.343}, role: 2, created_at: Date, updated_at: Date, last_active_at: Date }
+# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: 2, created_at: Date, updated_at: Date, last_active_at: Date }
 
 module.exports = User =
   setup: (db) ->

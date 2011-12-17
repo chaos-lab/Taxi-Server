@@ -65,14 +65,18 @@ class DriverController
 
         for doc in docs
           User.collection.findOne {phone_number: doc.passenger}, (err, passenger) ->
+            destination = if doc.destination then {longitude: doc.destination[0], latitude: doc.destination[1], name: doc.destination[2]} else null
             message =
               receiver: doc.driver
               type: "call-taxi"
               passenger:
                 phone_number: passenger.phone_number
                 nickname: passenger.nickname
-              origin: doc.origin
-              destination: doc.destination
+              origin:
+                longitude: doc.origin[0]
+                latitude: doc.origin[1]
+                name: doc.origin[2]
+              destination: destination
               id: doc._id
               timestamp: new Date().valueOf()
             Message.collection.update({receiver: message.receiver, passenger:message.passenger, type: message.type}, message, {upsert: true})
@@ -91,7 +95,9 @@ class DriverController
           self.passenger =
             phone_number: passenger.phone_number
             nickname: passenger.nickname
-            location: passenger.location
+            location:
+              longitude: passenger.location[0]
+              latitude: passenger.location[1]
           self.id = service._id
 
           res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
@@ -106,9 +112,7 @@ class DriverController
       winston.warn("driver updateLocation - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    loc =
-      longitude: req.json_data.longitude
-      latitude: req.json_data.latitude
+    loc = [req.json_data.longitude, req.json_data.latitude]
     User.collection.update {_id: req.current_user._id}, {$set: {location: loc}}
 
     Service.collection.find({driver: req.current_user.phone_number, state: 2}).toArray (err, docs) ->
@@ -121,7 +125,9 @@ class DriverController
           receiver: doc.passenger
           type: "location-update"
           phone_number: req.current_user.phone_number
-          location: loc
+          location:
+            longitude: req.json_data.longitude
+            latitude: req.json_data.latitude
           timestamp: new Date().valueOf()
 
         Message.collection.update({receiver: message.receiver, phone_number: message.phone_number, type: message.type}, message, {upsert: true})

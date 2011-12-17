@@ -12,7 +12,7 @@ class TaxiCallController
   getNearTaxis: (req, res) ->
     taxis = []
 
-    User.collection.find({ role:2, state:{$gte: 1}, taxi_state:1 }).toArray (err, docs)->
+    User.collection.find({ role:2, state:{$gte: 1}, taxi_state:1, location:{$exists: true} }).toArray (err, docs)->
       if err
         winston.warn("Service getNearTaxis - database error")
         return res.json { status: 3, message: "database error" }
@@ -23,20 +23,21 @@ class TaxiCallController
             phone_number: doc.phone_number
             nickname: doc.nickname
             car_number: doc.car_number
-            longitude: doc.location.longitude
-            latitude: doc.location.latitude
+            longitude: doc.location[0]
+            latitude: doc.location[1]
 
       res.json { status: 0, taxis: taxis }
 
   create: (req, res) ->
-    unless req.json_data.driver
+    unless req.json_data.key && req.json_data.driver && (!req.json_data.origin || (req.json_data.origin.longitude && req.json_data.origin.latitude)) && (!req.json_data.destination || (req.json_data.destination.longitude && req.json_data.destination.latitude))
+      console.dir(req.json_data)
       winston.warn("Service create - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {phone_number: req.json_data.driver}, (err, doc) ->
       if !doc || doc.state == 0 || doc.taxi_state != 1
-         winston.warn("Service create - driver #{req.json_data.driver} can't accept taxi call for now", doc)
-         return res.json { status: 101, message: "driver can't accept taxi call for now" }
+        winston.warn("Service create - driver #{req.json_data.driver} can't accept taxi call for now", doc)
+        return res.json { status: 101, message: "driver can't accept taxi call for now" }
 
       # only one active service is allowed for a user at the same time
       Service.collection.findOne {passenger: req.current_user.phone_number, $or:[{state:1}, {state:2}]}, (err, doc) ->
@@ -51,27 +52,33 @@ class TaxiCallController
             timestamp: new Date().valueOf()
           Message.collection.update({receiver: message.receiver, id:message.id, type: message.type}, message, {upsert: true})
 
+        origin = if req.json_data.origin then [req.json_data.origin.longitude, req.json_data.origin.latitude, req.json_data.origin.name] else req.current_user.location
+        destination = if req.json_data.destination then [req.json_data.destination.longitude, req.json_data.destination.latitude, req.json_data.destination.name] else null
         # create new service
         Service.uniqueID (id)->
           data =
             driver: req.json_data.driver
             passenger: req.current_user.phone_number
             state: 1
-            origin: (req.json_data.origin || req.current_user.location)
-            destination: req.json_data.destination
+            origin: origin
+            destination: destination
             key: req.json_data.key
             _id: id
           Service.create data
 
           # send call-taxi message to driver
+          dest = if destination then {longitude: destination[0], latitude: destination[1], name: destination[2]} else null
           message =
             receiver: req.json_data.driver
             type: "call-taxi"
             passenger:
               phone_number: req.current_user.phone_number
               nickname:req.current_user.nickname
-            origin: req.json_data.origin
-            destination: req.json_data.destination
+            origin:
+              longitude: origin[0]
+              latitude: origin[1]
+              name: origin[2]
+            destination: dest
             id: id
             timestamp: new Date().valueOf()
           Message.collection.update({receiver: message.receiver, passenger:message.passenger, type: message.type}, message, {upsert: true})
