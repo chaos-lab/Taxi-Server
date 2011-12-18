@@ -6,10 +6,10 @@ Service = require('./service')
 Evaluation = require('./evaluation')
 
 # driver schema
-# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: 1, created_at: Date, updated_at: Date, last_active_at: Date, car_number: "xxxx", taxi_state: 1 }
+# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: 1, created_at: Date, updated_at: Date, last_active_at: Date, car_number: "xxxx", taxi_state: 1, stats: {average_score: 3.6, service_count: 67, evaluation_count: 54 } }
 
 # passenger
-# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: 2, created_at: Date, updated_at: Date, last_active_at: Date }
+# { phone_number: "13814171931", password: "123456", nickname: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: 2, created_at: Date, updated_at: Date, last_active_at: Date, stats: {average_score: 3.6, service_count: 67, evaluation_count: 54 } }
 
 module.exports = User =
   ##
@@ -35,27 +35,23 @@ module.exports = User =
       fn(err, doc) if fn
 
   ##
-  # get user statistics
+  # update user statistics
   ##
-  stats: (user, fn) ->
-    query = if user.role == 1 then {passenger: user.phone_number, state: 3} else {driver: user.phone_number, state: 3}
-    Service.collection.find(query).count (err, count)->
-      map = ->
-        if user.role == 1
-          emit this.passenger, {score: this.score, count: 1}
-        else
-          emit this.driver, {score: this.score, count: 1}
+  updateStats: (phone_number, fn) ->
+    map = -> emit this.target, {score: this.score, count: 1}
 
-      reduce = (k, vals)->
-        result = {score: 0, count: 1}
-        for val in vals
-          result.score += val.score
-          result.count += val.count
-        return result
+    reduce = (k, vals)->
+      result = {score: 0, count: 1}
+      for val in vals
+        result.score += val.score
+        result.count += val.count
+      return result
 
-      Service.collection.mapReduce map, reduce, {out : {inline: 1}}, (err, results)->
-        average = if results[0].value.count > 0 then results[0].value.score / results[0].value.count else 0
-        fn {average_score: average, total_service_count: count} if fn
+    Evaluation.collection.mapReduce map, reduce, {out: {inline: 1}, query: {target: phone_number}, limit: 1000}, (err, results)->
+      count = results[0].value.count || 0
+      average = if results[0].value.count > 0 then results[0].value.score / results[0].value.count else 0
+      User.collection.update {_id: user._id}, {$set: {"stats.average_score": average, "stats.evaluation_count":count}}
+      fn {average_score: average, evaluation_count: count} if fn
 
   ##
   # get user messages

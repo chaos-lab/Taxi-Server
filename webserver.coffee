@@ -14,6 +14,7 @@ User = require('./models/user')
 Service = require('./models/service')
 Message = require('./models/message')
 Evaluation = require('./models/evaluation')
+Location = require('./models/location')
 
 ######################################################
 # controllers
@@ -30,6 +31,8 @@ passenger_controller = new PassengerController()
 TaxiCallController = require('./controllers/taxi_call_controller')
 taxi_call_controller = new TaxiCallController()
 
+LocationController = require('./controllers/location_controller')
+location_controller = new LocationController()
 
 ######################################################
 # create express
@@ -44,6 +47,7 @@ app.setupDB = (fn) ->
     Service.setup(client)
     Message.setup(client)
     Evaluation.setup(client)
+    Location.setup(client)
 
     fn(client) if fn
 
@@ -139,6 +143,11 @@ app.post '/service/reply',            authorization_controller.restrict_to_drive
 app.post '/service/cancel',           authorization_controller.restrict_to_passenger,    taxi_call_controller.cancel
 app.post '/service/complete',         authorization_controller.restrict_to_driver,       taxi_call_controller.complete
 app.post '/service/evaluate',         authorization_controller.restrict_to_user,         taxi_call_controller.evaluate
+app.get  '/service/history',          authorization_controller.restrict_to_user,         taxi_call_controller.history
 app.get  '/service/evaluations',      authorization_controller.restrict_to_user,         taxi_call_controller.getEvaluations
 app.get  '/service/user/evaluations', authorization_controller.restrict_to_user,         taxi_call_controller.getUserEvaluations
 
+######################################################
+# location routes
+######################################################
+app.post '/location/create',          authorization_controller.restrict_to_user,       location_controller.create

@@ -10,6 +10,9 @@ class DriverController
 
   constructor: ->
 
+  ##
+  # driver sign up
+  ##
   signup: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname && req.json_data.car_number
       winston.warn("driver signup - incorrect data format", req.json_data)
@@ -37,6 +40,9 @@ class DriverController
 
       res.json { status: 0 }
   
+  ##
+  # driver sign in
+  ##
   signin: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password
       winston.warn("driver signin - incorrect data format", req.json_data)
@@ -58,7 +64,6 @@ class DriverController
 
         for doc in docs
           User.collection.findOne {phone_number: doc.passenger}, (err, passenger) ->
-            destination = if doc.destination then {longitude: doc.destination[0], latitude: doc.destination[1], name: doc.destination[2]} else null
             message =
               receiver: doc.driver
               type: "call-taxi"
@@ -69,13 +74,13 @@ class DriverController
                 longitude: doc.origin[0]
                 latitude: doc.origin[1]
                 name: doc.origin[2]
-              destination: destination
               id: doc._id
               timestamp: new Date().valueOf()
+            message.destination = {longitude: doc.destination[0], latitude: doc.destination[1], name: doc.destination[2]} if doc.destination
             Message.collection.update({receiver: message.receiver, passenger:message.passenger, type: message.type}, message, {upsert: true})
 
       # find accepted service, and include the info in response
-      self = { phone_number: driver.phone_number, nickname: driver.nickname, state: driver.taxi_state, car_number: driver.car_number, state: driver.taxi_state }
+      self = { phone_number: driver.phone_number, nickname: driver.nickname, state: driver.taxi_state, car_number: driver.car_number, state: driver.taxi_state, stats: driver.stats }
       Service.collection.findOne { driver: driver.phone_number, state: 2 }, (err, service) ->
         if !service
           return res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
@@ -95,11 +100,17 @@ class DriverController
 
           res.json { status: 0, self: self, message: "welcome, #{driver.nickname}" }
   
+  ##
+  # driver sign out
+  ##
   signout: (req, res) ->
     User.collection.update({_id: req.current_user._id}, {$set: {state: 0}})
     req.session.destroy()
     res.json { status: 0, message: "bye" }
   
+  ##
+  # driver update location
+  ##
   updateLocation: (req, res) ->
     unless req.json_data.latitude && req.json_data.longitude
       winston.warn("driver updateLocation - incorrect data format", req.json_data)
@@ -127,6 +138,9 @@ class DriverController
 
     res.json { status: 0 }
 
+  ##
+  # driver update taxi state
+  ##
   updateState: (req, res) ->
     unless req.json_data.state
       winston.warn("driver updateState - incorrect data format", req.json_data)
@@ -135,6 +149,9 @@ class DriverController
     User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: req.json_data.state}})
     res.json { status: 0 }
   
+  ##
+  # driver get messages
+  ##
   refresh: (req, res) ->
     User.getMessages req.current_user.phone_number, (messages)->
       res.json { status: 0, messages: messages }

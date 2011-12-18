@@ -29,6 +29,7 @@ class TaxiCallController
             car_number: doc.car_number
             longitude: doc.location[0]
             latitude: doc.location[1]
+            stats: doc.stats
 
       res.json { status: 0, taxis: taxis }
 
@@ -74,7 +75,6 @@ class TaxiCallController
           Service.create data
 
           # send call-taxi message to driver
-          dest = if destination then {longitude: destination[0], latitude: destination[1], name: destination[2]} else null
           message =
             receiver: req.json_data.driver
             type: "call-taxi"
@@ -85,9 +85,9 @@ class TaxiCallController
               longitude: origin[0]
               latitude: origin[1]
               name: origin[2]
-            destination: dest
             id: id
             timestamp: new Date().valueOf()
+          message.destination = {longitude: destination[0], latitude: destination[1], name: destination[2]} if destination
           Message.collection.update({receiver: message.receiver, passenger:message.passenger, type: message.type}, message, {upsert: true})
 
           res.json { status: 0, id: id }
@@ -168,7 +168,8 @@ class TaxiCallController
 
       Service.collection.update({_id: doc._id}, {$set: {state: 3, updated_at: new Date()}})
       # set taxi state to idle
-      User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 1}})
+      User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 1}, $inc:{"stats.service_count": 1}})
+      User.collection.update({phone_number: doc.passenger}, {$inc:{"stats.service_count": 1}})
 
       message =
         receiver: doc.passenger
@@ -180,7 +181,7 @@ class TaxiCallController
       res.json { status: 0 }
 
   ##
-  # driver or passenger evaluate a service
+  # evaluate a service
   ##
   evaluate: (req, res) ->
     unless req.json_data.id && req.json_data.score
@@ -197,20 +198,22 @@ class TaxiCallController
         winston.warn("Service evaluate - you can't evaluate this service.", service)
         return res.json { status: 101, message: "you can't evaluate this service" }
 
-      Evaluation.collection.findOne {service_id: req.json_data.id, role: req.current_user.role}, (err, doc) ->
+      Evaluation.collection.findOne {service_id: req.json_data.id, "evaluator": req.current_user.phone_number}, (err, doc) ->
         if doc
           winston.warn("Service evaluate - you have evaluated this service", doc)
           return res.json { status: 102, message: "you have evaluated this service" }
 
+        target = if req.current_user.role == 1 then service.driver else service.passenger
         # create evaluation
         evaluation =
           service_id: service._id
-          driver: service.driver
-          passenger: service.passenger
+          evaluator: req.current_user.phone_number
+          target: target
           role: req.current_user.role
           score: req.json_data.score
           comment: req.json_data.comment
-        Evaluation.create evaluation
+        Evaluation.create evaluation, (err, doc)->
+          User.updateStats(target)
 
         res.json { status: 0 }
 
@@ -222,7 +225,7 @@ class TaxiCallController
       winston.warn("Service getEvaluations - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    Evaluation.collection.find({service_id:{$in: req.json_data}}).toArray (err, docs)->
+    Evaluation.collection.find({service_id:{$in: req.json_data.ids}}).toArray (err, docs)->
       if err
         winston.warn("Service getEvaluations - database error")
         return res.json { status: 3, message: "database error" }
@@ -257,27 +260,121 @@ class TaxiCallController
         winston.warn("driver signin - database error")
         return res.json { status: 101, message: "database error" }
 
-      query = if user.role == 1 then {driver: user.phone_number, role: 2} else {driver: user.phone_number, role: 1}
-      Evaluation.collection.find({created_at: {$lte: new Date(req.json_data.end_time)}}, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, docs)->
+      Evaluation.collection.find({created_at: {$lte: new Date(req.json_data.end_time)}, "target":user.phone_number}, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, docs)->
         if err
           winston.warn("Service getUserEvaluations - database error")
           return res.json { status: 3, message: "database error" }
 
-        User.stats user, (stats)->
-          stats.status = 0
-          stats.evaluations = []
-          for evaluation in docs
-            stats.evaluations.push
-              score: evaluation.score
-              comment: evaluation.comment
-              created_at: evaluation.created_at.valueOf()
-              evaluator: "souriki"
+        evals = []
+        keys = []
+        for evaluation in docs
+          keys.push evaluation.evaluator
+          evals.push
+            score: evaluation.score
+            comment: evaluation.comment
+            created_at: evaluation.created_at.valueOf()
+            evaluator: evaluation.evaluator
 
-          return res.json stats
+        # set evaluator nickname. mongodb doesn't support join
+        User.collection.find({phone_number: {$in: keys}}).toArray (err, docs)->
+          if err
+            winston.warn("Service getUserEvaluations - database error")
+            return res.json { status: 3, message: "database error" }
+
+          evaluators = {}
+          evaluators[evaluator.phone_number] = evaluator for evaluator in docs
+
+          # set evaluator to nickname
+          evaluation.evaluator = evaluators[evaluation.evaluator].nickname for evaluation in evals
+
+          return res.json { status: 0, evaluations: evals}
 
   ##
   # get history of services related to current user
   ##
   history: (req, res) ->
+    unless req.json_data.end_time
+      winston.warn("Service history - incorrect data format", req.json_data)
+      return res.json { status: 2, message: "incorrect data format" }
+
+    # set default params
+    req.json_data.count = req.json_data.count || 10
+    req.json_data.start_time = req.json_data.start_time || new Date(2011, 11, 11)
+
+    driver_query = {state: {$in: [-3, -2, -1, 3]}, driver: req.current_user.phone_number, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
+    passenger_query = {state: {$in: [-3, -2, -1, 3]}, passenger: req.current_user.phone_number, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
+    query = if req.current_user.role == 1 then passenger_query else driver_query
+
+    Service.collection.find(query, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, services)->
+      if err
+        winston.warn("Service history - database error")
+        return res.json { status: 3, message: "database error" }
+
+      service_map = {}
+      service_keys = []
+      user_keys = []
+      for service in services
+        service.id = service._id
+        delete service._id
+
+        service.created_at = service.created_at.valueOf()
+        service.updated_at = service.updated_at.valueOf()
+
+        service.origin =
+          longitude: service.origin[0]
+          latitude: service.origin[1]
+          name: service.origin[2]
+
+        if service.destination
+          service.destination =
+            longitude: service.destination[0]
+            latitude: service.destination[1]
+            name: service.destination[2]
+
+        service_map[service.id] = service
+        service_keys.push(service._id)
+        if req.current_user.role == 1
+          user_keys.push(service.driver)
+        else
+          user_keys.push(service.passenger)
+
+      # load details user info
+      User.collection.find({phone_number: {$in: user_keys}}).toArray (err, users)->
+        if err
+          winston.warn("Service getUserEvaluations - database error")
+          return res.json { status: 3, message: "database error" }
+
+        user_map = {}
+        user_map[user.phone_number] = user for user in users
+
+        # set detailed user info
+        for service in services
+          if req.current_user.role == 1
+            delete service.passenger
+            service.driver =
+              phone_number: service.driver
+              nickname: user_map[service.driver].nickname
+              car_number: user_map[service.driver].car_number
+          else
+            delete service.driver
+            service.passenger =
+              phone_number: service.driver
+              nickname: user_map[service.driver].nickname
+              car_number: user_map[service.driver].car_number
+
+        # load evaluations
+        Evaluation.collection.find({service_id:{$in: service_keys}}).toArray (err, evaluations)->
+          if err
+            winston.warn("Service getEvaluations - database error")
+            return res.json { status: 3, message: "database error" }
+
+          # set evaluations
+          for evaluation in evaluations
+            if evaluation.role == 1
+              service_map[evaluation.service_id]["passenger_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
+            else
+              result[evaluation.service_id]["driver_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
+
+          res.json { status: 0, services: services }
 
 module.exports = TaxiCallController

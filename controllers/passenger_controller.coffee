@@ -10,6 +10,9 @@ class PassengerController
 
   constructor: ->
 
+  ##
+  # passenger signup
+  ##
   signup: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password && req.json_data.nickname
       winston.warn("passenger signup - incorrect data format", req.json_data)
@@ -34,6 +37,9 @@ class PassengerController
 
       res.json { status: 0 }
   
+  ##
+  # passenger signin
+  ##
   signin: (req, res) ->
     unless req.json_data.phone_number && req.json_data.password
       winston.warn("passenger signin - incorrect data format", req.json_data)
@@ -47,7 +53,7 @@ class PassengerController
       # set session info
       req.session.user_id = passenger.phone_number
 
-      self = { phone_number: passenger.phone_number, nickname: passenger.nickname }
+      self = { phone_number: passenger.phone_number, nickname: passenger.nickname, stats: passenger.stats }
       Service.collection.findOne { passenger: passenger.phone_number, $or:[{state: 1}, {state: 2}]}, (err, service) ->
         if err or !service
           self.state = 0
@@ -71,11 +77,17 @@ class PassengerController
           # { status: 0|1|2|... [, message: "xxxx"], self:{ nickname:"liufy", phone_number:"13814171931", state: 0|1|2, driver: {car_number:"a186", nickname: "liuq", phone_number: "12345678900"[, latitude: 11.456789, longitude: 211.211985]}}} 
           res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
   
+  ##
+  # passenger signout
+  ##
   signout: (req, res) ->
     User.collection.update({_id: req.current_user._id}, {$set: {state: 0}})
     req.session.destroy()
     res.json { status: 0, message: "bye" }
   
+  ##
+  # passenger update location
+  ##
   updateLocation: (req, res) ->
     unless req.json_data.latitude && req.json_data.longitude
       winston.warn("passenger updateLocation - incorrect data format", req.json_data)
@@ -103,6 +115,9 @@ class PassengerController
 
     res.json { status: 0 }
   
+  ##
+  # passenger get messages
+  ##
   refresh: (req, res) ->
     User.getMessages req.current_user.phone_number, (messages)->
         res.json { status: 0, messages: messages }
