@@ -43,6 +43,10 @@ suite.addBatch
         assert.equal(res.body.status, 0)
         assert.isTrue res.body.taxis.length > 0
         assert.equal(res.body.taxis[0].phone_number, "driver1")
+        assert.isNotNull(res.body.taxis[0].stats)
+        assert.isNotNull(res.body.taxis[0].stats.service_count)
+        assert.isNotNull(res.body.taxis[0].stats.average_score)
+        assert.isNotNull(res.body.taxis[0].stats.evaluation_count)
 
 suite.addBatch
   "should be able for passenger to send taxi call":
@@ -155,6 +159,29 @@ suite.addBatch
       return
   
     'should fail': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 101)
+
+suite.addBatch
+  'should be unable for passenger to evaluate cancelled service':
+    topic: (res, $)->
+      data = { id: driver.service_id, score: 4, comment: "Good!" }
+      data = JSON.stringify(data)
+      passenger.post '/service/evaluate', { body: 'json_data=' + data }, this.callback
+      return
+
+    'should succeed': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 101)
+
+  'should be unable for driver to evaluate cancelled service':
+    topic: (res, $)->
+      data = { id: driver.service_id, score: 3, comment: "bad!" }
+      data = JSON.stringify(data)
+      driver.post '/service/evaluate', { body: 'json_data=' + data }, this.callback
+      return
+
+    'should succeed': (res, $) ->
       res.should.have.status(200)
       assert.equal(res.body.status, 101)
 

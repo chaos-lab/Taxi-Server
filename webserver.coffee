@@ -99,7 +99,10 @@ app.configure 'development', 'production', ->
 ######################################################
 app.use (req, res, next) ->
   if req.param("json_data")
-    req.json_data = JSON.parse(req.param("json_data"))
+    try
+      req.json_data = JSON.parse(req.param("json_data"))
+    catch e
+      return res.json {status: 2, message:"incorrect format in preprocessing"}
 
   unless req.session.user_id
     return next()

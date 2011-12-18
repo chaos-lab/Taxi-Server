@@ -177,6 +177,7 @@ class TaxiCallController
       message =
         receiver: doc.passenger
         type: "call-taxi-complete"
+        id: doc._id
         key: doc.key
         timestamp: new Date().valueOf()
       Message.collection.update({receiver: message.receiver, key:message.key, type: message.type}, message, {upsert: true})
@@ -317,6 +318,13 @@ class TaxiCallController
       service_keys = []
       user_keys = []
       for service in services
+        service_map[service._id] = service
+        service_keys.push(service._id)
+        if req.current_user.role == 1
+          user_keys.push(service.driver)
+        else
+          user_keys.push(service.passenger)
+
         service.id = service._id
         delete service._id
 
@@ -334,13 +342,6 @@ class TaxiCallController
             latitude: service.destination[1]
             name: service.destination[2]
 
-        service_map[service.id] = service
-        service_keys.push(service._id)
-        if req.current_user.role == 1
-          user_keys.push(service.driver)
-        else
-          user_keys.push(service.passenger)
-
       # load details user info
       User.collection.find({phone_number: {$in: user_keys}}).toArray (err, users)->
         if err
@@ -354,16 +355,20 @@ class TaxiCallController
         for service in services
           if req.current_user.role == 1
             delete service.passenger
+            stats = if user_map[service.driver].stats then user_map[service.driver].stats else {average_score: 0, service_count: 0, evaluation_count: 0}
             service.driver =
               phone_number: service.driver
               nickname: user_map[service.driver].nickname
               car_number: user_map[service.driver].car_number
+              stats: stats
           else
             delete service.driver
+            stats = if user_map[service.passenger].stats then user_map[service.passenger].stats else {average_score: 0, service_count: 0, evaluation_count: 0}
             service.passenger =
-              phone_number: service.driver
-              nickname: user_map[service.driver].nickname
-              car_number: user_map[service.driver].car_number
+              phone_number: service.passenger
+              nickname: user_map[service.passenger].nickname
+              car_number: user_map[service.passenger].car_number
+              stats: stats
 
         # load evaluations
         Evaluation.collection.find({service_id:{$in: service_keys}}).toArray (err, evaluations)->
@@ -376,7 +381,7 @@ class TaxiCallController
             if evaluation.role == 1
               service_map[evaluation.service_id]["passenger_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
             else
-              result[evaluation.service_id]["driver_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
+              service_map[evaluation.service_id]["driver_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
 
           res.json { status: 0, services: services }
 

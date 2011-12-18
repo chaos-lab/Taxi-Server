@@ -127,7 +127,11 @@ suite.addBatch
     'should succeed': (res, $) ->
       res.should.have.status(200)
       assert.equal(res.body.status, 0)
-      assert.isObject(res.body.self)
+      assert.isNotNull(res.body.self)
+      assert.isNotNull(res.body.self.stats)
+      assert.isNotNull(res.body.self.stats.service_count)
+      assert.isNotNull(res.body.self.stats.average_score)
+      assert.isNotNull(res.body.self.stats.evaluation_count)
       assert.equal(res.body.self.nickname, 'cang')
 
 suite.addBatch

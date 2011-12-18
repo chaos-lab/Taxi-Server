@@ -47,10 +47,10 @@ module.exports = User =
         result.count += val.count
       return result
 
-    Evaluation.collection.mapReduce map, reduce, {out: {inline: 1}, query: {target: phone_number}, limit: 1000}, (err, results)->
+    Evaluation.collection.mapReduce map, reduce, {out: {inline: 1}, query: {target: phone_number}, limit: 1000}, (err, results) =>
       count = results[0].value.count || 0
       average = if results[0].value.count > 0 then results[0].value.score / results[0].value.count else 0
-      User.collection.update {_id: user._id}, {$set: {"stats.average_score": average, "stats.evaluation_count":count}}
+      this.collection.update {phone_number: phone_number}, {$set: {"stats.average_score": average, "stats.evaluation_count":count}}
       fn {average_score: average, evaluation_count: count} if fn
 
   ##
