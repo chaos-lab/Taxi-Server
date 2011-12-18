@@ -53,6 +53,7 @@ class PassengerController
       # set session info
       req.session.user_id = passenger.phone_number
 
+      passenger.stats = {average_score: 0, service_count: 0, evaluation_count: 0} unless passenger.stats
       self = { phone_number: passenger.phone_number, nickname: passenger.nickname, stats: passenger.stats }
       Service.collection.findOne { passenger: passenger.phone_number, $or:[{state: 1}, {state: 2}]}, (err, service) ->
         if err or !service

@@ -21,6 +21,9 @@ class TaxiCallController
         winston.warn("Service getNearTaxis - database error")
         return res.json { status: 3, message: "database error" }
 
+      # set default stats
+      doc.stats = {average_score: 0, service_count: 0, evaluation_count: 0} unless doc.stats
+
       for doc in docs
         if doc.location
           taxis.push
@@ -196,12 +199,12 @@ class TaxiCallController
 
       unless service.driver == req.current_user.phone_number || service.passenger == req.current_user.phone_number
         winston.warn("Service evaluate - you can't evaluate this service.", service)
-        return res.json { status: 101, message: "you can't evaluate this service" }
+        return res.json { status: 102, message: "you can't evaluate this service" }
 
       Evaluation.collection.findOne {service_id: req.json_data.id, "evaluator": req.current_user.phone_number}, (err, doc) ->
         if doc
           winston.warn("Service evaluate - you have evaluated this service", doc)
-          return res.json { status: 102, message: "you have evaluated this service" }
+          return res.json { status: 103, message: "you have evaluated this service" }
 
         target = if req.current_user.role == 1 then service.driver else service.passenger
         # create evaluation

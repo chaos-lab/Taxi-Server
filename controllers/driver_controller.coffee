@@ -80,6 +80,7 @@ class DriverController
             Message.collection.update({receiver: message.receiver, passenger:message.passenger, type: message.type}, message, {upsert: true})
 
       # find accepted service, and include the info in response
+      driver.stats = {average_score: 0, service_count: 0, evaluation_count: 0} unless driver.stats
       self = { phone_number: driver.phone_number, nickname: driver.nickname, state: driver.taxi_state, car_number: driver.car_number, state: driver.taxi_state, stats: driver.stats }
       Service.collection.findOne { driver: driver.phone_number, state: 2 }, (err, service) ->
         if !service
