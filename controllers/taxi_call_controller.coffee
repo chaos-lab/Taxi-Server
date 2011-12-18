@@ -21,11 +21,11 @@ class TaxiCallController
         winston.warn("Service getNearTaxis - database error")
         return res.json { status: 3, message: "database error" }
 
-      # set default stats
-      doc.stats = {average_score: 0, service_count: 0, evaluation_count: 0} unless doc.stats
 
       for doc in docs
         if doc.location
+          # set default stats
+          doc.stats = {average_score: 0, service_count: 0, evaluation_count: 0} unless doc.stats
           taxis.push
             phone_number: doc.phone_number
             nickname: doc.nickname
