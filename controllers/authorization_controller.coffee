@@ -2,8 +2,6 @@
 
 winston = require('winston')
 
-User = require('../models/user')
-
 class AuthorizationController
 
   constructor: ->

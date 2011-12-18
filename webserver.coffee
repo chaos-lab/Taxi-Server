@@ -116,29 +116,29 @@ app.get '/', (req, res, next)->
 ######################################################
 app.post '/driver/signup',          driver_controller.signup
 app.post '/driver/signin',          driver_controller.signin
-app.post '/driver/signout',         AuthorizationController.restrict_to_driver,   driver_controller.signout
-app.post '/driver/location/update', AuthorizationController.restrict_to_driver,   driver_controller.updateLocation
-app.post '/driver/taxi/update',     AuthorizationController.restrict_to_driver,   driver_controller.updateState
-app.get  '/driver/refresh',         AuthorizationController.restrict_to_driver,   driver_controller.refresh
+app.post '/driver/signout',         authorization_controller.restrict_to_driver,   driver_controller.signout
+app.post '/driver/location/update', authorization_controller.restrict_to_driver,   driver_controller.updateLocation
+app.post '/driver/taxi/update',     authorization_controller.restrict_to_driver,   driver_controller.updateState
+app.get  '/driver/refresh',         authorization_controller.restrict_to_driver,   driver_controller.refresh
 
 ######################################################
 # passenger routes
 ######################################################
 app.post '/passenger/signup',           passenger_controller.signup
 app.post '/passenger/signin',           passenger_controller.signin
-app.post '/passenger/signout',          AuthorizationController.restrict_to_passenger,   passenger_controller.signout
-app.post '/passenger/location/update',  AuthorizationController.restrict_to_passenger,   passenger_controller.updateLocation
-app.get  '/passenger/refresh',          AuthorizationController.restrict_to_passenger,   passenger_controller.refresh
+app.post '/passenger/signout',          authorization_controller.restrict_to_passenger,   passenger_controller.signout
+app.post '/passenger/location/update',  authorization_controller.restrict_to_passenger,   passenger_controller.updateLocation
+app.get  '/passenger/refresh',          authorization_controller.restrict_to_passenger,   passenger_controller.refresh
 
 ######################################################
 # taxi call routes
 ######################################################
-app.get  '/taxi/near',                AuthorizationController.restrict_to_passenger,    taxi_call_controller.getNearTaxis
-app.post '/service/create',           AuthorizationController.restrict_to_passenger,    taxi_call_controller.create
-app.post '/service/reply',            AuthorizationController.restrict_to_driver,       taxi_call_controller.reply
-app.post '/service/cancel',           AuthorizationController.restrict_to_passenger,    taxi_call_controller.cancel
-app.post '/service/complete',         AuthorizationController.restrict_to_driver,       taxi_call_controller.complete
-app.post '/service/evaluate',         AuthorizationController.restrict_to_user,         taxi_call_controller.evaluate
-app.get  '/service/evaluations',      AuthorizationController.restrict_to_user,         taxi_call_controller.getEvaluations
-app.get  '/service/user/evaluations', AuthorizationController.restrict_to_user,         taxi_call_controller.getUserEvaluations
+app.get  '/taxi/near',                authorization_controller.restrict_to_passenger,    taxi_call_controller.getNearTaxis
+app.post '/service/create',           authorization_controller.restrict_to_passenger,    taxi_call_controller.create
+app.post '/service/reply',            authorization_controller.restrict_to_driver,       taxi_call_controller.reply
+app.post '/service/cancel',           authorization_controller.restrict_to_passenger,    taxi_call_controller.cancel
+app.post '/service/complete',         authorization_controller.restrict_to_driver,       taxi_call_controller.complete
+app.post '/service/evaluate',         authorization_controller.restrict_to_user,         taxi_call_controller.evaluate
+app.get  '/service/evaluations',      authorization_controller.restrict_to_user,         taxi_call_controller.getEvaluations
+app.get  '/service/user/evaluations', authorization_controller.restrict_to_user,         taxi_call_controller.getUserEvaluations
 
