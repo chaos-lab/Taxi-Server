@@ -41,7 +41,7 @@ module.exports = User =
     map = -> emit this.target, {score: this.score, count: 1}
 
     reduce = (k, vals)->
-      result = {score: 0, count: 1}
+      result = {score: 0, count: 0}
       for val in vals
         result.score += val.score
         result.count += val.count
