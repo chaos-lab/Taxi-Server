@@ -18,15 +18,14 @@ suite.addBatch
   "setup":
     topic: ->
       self = this
-      app.setupDB (db)->
-        p1 = { phone_number: "passenger1", password: "123456", nickname: "liufy", role: 1, state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
-        d1 = { phone_number: "driver1", password: "123456", nickname: "cang", role: 2, state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
-        helper.cleanDB db, ->
-          helper.createUser db, p1, ->
-            helper.createUser db, d1, ->
-              helper.signin_passenger passenger, { phone_number: "passenger1", password: "123456" }, (res, $) ->
-                helper.signin_driver driver, { phone_number: "driver1", password: "123456" }, (res, $) ->
-                  self.callback()
+      p1 = { phone_number: "passenger1", password: "123456", nickname: "liufy", role: 1, state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
+      d1 = { phone_number: "driver1", password: "123456", nickname: "cang", role: 2, state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
+      helper.cleanDB app.db, ->
+        helper.createUser app.db, p1, ->
+          helper.createUser app.db, d1, ->
+            helper.signin_passenger passenger, { phone_number: "passenger1", password: "123456" }, (res, $) ->
+              helper.signin_driver driver, { phone_number: "driver1", password: "123456" }, (res, $) ->
+                self.callback()
 
       # tells vows it's async, or coffee will return last value, which breaks the framework.
       return

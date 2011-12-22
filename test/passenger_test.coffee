@@ -16,11 +16,9 @@ suite = vows.describe('passenger test')
 suite.addBatch
   "setup - ":
     topic: ->
-      # app.setupDB(this.callback) doesn't work!!!
       self = this
-      app.setupDB (db) ->
-        helper.cleanDB db, ->
-          self.callback()
+      helper.cleanDB app.db, ->
+        self.callback()
 
       # tells vows it's async, or coffee will return last value, which breaks the framework.
       return

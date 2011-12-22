@@ -21,13 +21,12 @@ suite.addBatch
   "setup":
     topic: ->
       self = this
-      app.setupDB (db)->
-        helper.cleanDB db, ->
-          helper.createUser db, p1, ->
-            helper.createUser db, d1, ->
-              helper.signin_passenger passenger, { phone_number: "passenger1", password: "123456" }, (res, $) ->
-                helper.signin_driver driver, { phone_number: "driver1", password: "123456" }, (res, $) ->
-                  self.callback()
+      helper.cleanDB app.db, ->
+        helper.createUser app.db, p1, ->
+          helper.createUser app.db, d1, ->
+            helper.signin_passenger passenger, { phone_number: "passenger1", password: "123456" }, (res, $) ->
+              helper.signin_driver driver, { phone_number: "driver1", password: "123456" }, (res, $) ->
+                self.callback()
 
       # tells vows it's async, or coffee will return last value, which breaks the framework.
       return

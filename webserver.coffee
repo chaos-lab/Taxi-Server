@@ -1,11 +1,12 @@
 express = require('express')
 winston = require('winston')
+mongodb = require('mongodb')
+mongoStore = require('connect-mongodb')
 
 ######################################################
 # mongodb setup
 ######################################################
-mongodb = require('mongodb')
-server = new mongodb.Server(config.database.host, config.database.port, {})
+db = new mongodb.Db(config.database.db, new mongodb.Server(config.database.host, config.database.port,{auto_reconnect: true, poolSize: 4}))
 
 ######################################################
 # initiate models
@@ -16,6 +17,11 @@ Message = require('./models/message')
 Evaluation = require('./models/evaluation')
 Location = require('./models/location')
 
+User.setup(db)
+Service.setup(db)
+Message.setup(db)
+Evaluation.setup(db)
+Location.setup(db)
 ######################################################
 # controllers
 ######################################################
@@ -39,30 +45,23 @@ location_controller = new LocationController()
 ######################################################
 module.exports = app = express.createServer()
 
-app.setupDB = (fn) ->
-  new mongodb.Db(config.database.db, server, {}).open (error, client)->
-    throw error if error
-
-    User.setup(client)
-    Service.setup(client)
-    Message.setup(client)
-    Evaluation.setup(client)
-    Location.setup(client)
-
-    fn(client) if fn
-
 app.start = ->
-  app.listen config.webserver.port, ->
-    addr = app.address()
-    winston.info('app listening on http://' + addr.address + ':' + addr.port)
+  app.db.open ->
+    app.listen config.webserver.port, ->
+      addr = app.address()
+      winston.info('app listening on http://' + addr.address + ':' + addr.port)
 
+app.db = db
 ######################################################
 # configurations
 ######################################################
 app.configure ->
   app.use(express.bodyParser())
   app.use(express.cookieParser())
-  app.use(express.session({ secret: "keyboard cat" }))
+  app.use express.session
+    secret: "keyboard cat"
+    maxAge: 60000 * 20
+    store: new mongoStore({db: db})
 
   app.use express.errorHandler
     dumpExceptions: true

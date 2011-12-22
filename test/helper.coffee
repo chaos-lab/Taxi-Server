@@ -10,12 +10,14 @@ module.exports = helper =
     messages = new mongodb.Collection(db, 'messages')
     evaluations = new mongodb.Collection(db, 'evaluations')
     counters = new mongodb.Collection(db, 'counters')
+    sessions = new mongodb.Collection(db, 'sessions')
     users.drop ->
       services.drop ->
         messages.drop ->
           evaluations.drop ->
             counters.drop ->
-              fn()
+              sessions.drop ->
+                fn()
 
   createUser: (db, json, fn) ->
     users = new mongodb.Collection(db, 'users')
