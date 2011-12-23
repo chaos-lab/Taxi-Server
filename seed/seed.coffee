@@ -200,5 +200,33 @@ suite.addBatch
       res.should.have.status(200)
       assert.equal(res.body.status, 0)
 
+suite.addBatch
+  'should be able for driver to get evaluations about passenger':
+    topic: (res, $)->
+      data = {phone_number: p1.phone_number, end_time: new Date().valueOf()}
+      data = JSON.stringify(data)
+      driver.get '/service/user/evaluations?' + querystring.stringify({json_data: data}), this.callback
+      return
+
+    'should succeed': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 0)
+      assert.isNotNull(res.body.evaluations)
+      assert.equal(res.body.evaluations[0].evaluator, d1.nickname)
+
+suite.addBatch
+  'should be able for passenger to get evaluations about driver':
+    topic: (res, $)->
+      data = {phone_number: d1.phone_number, end_time: new Date().valueOf()}
+      data = JSON.stringify(data)
+      driver.get '/service/user/evaluations?' + querystring.stringify({json_data: data}), this.callback
+      return
+
+    'should succeed': (res, $) ->
+      res.should.have.status(200)
+      assert.equal(res.body.status, 0)
+      assert.isNotNull(res.body.evaluations)
+      assert.equal(res.body.evaluations[0].evaluator, p1.nickname)
+
 suite.export(module)
 
