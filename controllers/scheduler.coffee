@@ -9,7 +9,7 @@ scanUserState = ->
   User.collection.update { last_active_at:{$lt: new Date(new Date().valueOf() - 10000)}, state: 2}, {$set: {state: 0}}
 
 scanServiceState = ->
-  winston.info("scan user state every 100s")
+  winston.info("scan service state every 100s")
 
   # if service is accepted for more than one hour, cancel it
   Service.collection.find({ created_at:{$lt: new Date(new Date().valueOf() - 3600000)}, state: 2 }).toArray (err, docs) ->

@@ -10,7 +10,7 @@ class LocationController
   # create location
   ##
   create: (req, res) ->
-    unless req.json_data.latitude && req.json_data.longitude && req.json_data.name
+    unless req.json_data && req.json_data.latitude && req.json_data.longitude && req.json_data.name
       winston.warn("LocationController create - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 

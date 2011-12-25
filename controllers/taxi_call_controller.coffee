@@ -40,7 +40,7 @@ class TaxiCallController
   # create taxi call request
   ##
   create: (req, res) ->
-    unless req.json_data.key && req.json_data.driver && (!req.json_data.origin || (req.json_data.origin.longitude && req.json_data.origin.latitude)) && (!req.json_data.destination || (req.json_data.destination.longitude && req.json_data.destination.latitude))
+    unless req.json_data && req.json_data.key && req.json_data.driver && (!req.json_data.origin || (req.json_data.origin.longitude && req.json_data.origin.latitude)) && (!req.json_data.destination || (req.json_data.destination.longitude && req.json_data.destination.latitude))
       console.dir(req.json_data)
       winston.warn("Service create - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
@@ -99,7 +99,7 @@ class TaxiCallController
   # driver reply to a taxi call
   ##
   reply: (req, res) ->
-    unless req.json_data.id
+    unless req.json_data && req.json_data.id
       winston.warn("Service reply - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -129,7 +129,7 @@ class TaxiCallController
   # passenger cancel a taxi call
   ##
   cancel: (req, res) ->
-    if !req.json_data.id && !req.json_data.key
+    unless req.json_data && (req.json_data.id || req.json_data.key)
       winston.warn("Service cancel - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -159,7 +159,7 @@ class TaxiCallController
   # driver notify the completion of a service
   ##
   complete: (req, res) ->
-    unless req.json_data.id
+    unless req.json_data && req.json_data.id
       winston.warn("Service complete - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -188,7 +188,7 @@ class TaxiCallController
   # evaluate a service
   ##
   evaluate: (req, res) ->
-    unless req.json_data.id && req.json_data.score
+    unless req.json_data && req.json_data.id && req.json_data.score
       winston.warn("Service evaluate - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -225,7 +225,7 @@ class TaxiCallController
   # get evaluations of specified services
   ##
   getEvaluations: (req, res) ->
-    unless req.json_data.ids
+    unless req.json_data && req.json_data.ids
       winston.warn("Service getEvaluations - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -248,7 +248,7 @@ class TaxiCallController
   # get evaluations of a user
   ##
   getUserEvaluations: (req, res) ->
-    unless req.json_data.phone_number && req.json_data.end_time
+    unless req.json_data && req.json_data.phone_number && req.json_data.end_time
       winston.warn("Service getEvaluations - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -297,7 +297,7 @@ class TaxiCallController
   # get history of services related to current user
   ##
   history: (req, res) ->
-    unless req.json_data.end_time
+    unless req.json_data && req.json_data.end_time
       winston.warn("Service history - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
