@@ -367,7 +367,6 @@ class TaxiCallController
             service.passenger =
               phone_number: service.passenger
               nickname: user_map[service.passenger].nickname
-              car_number: user_map[service.passenger].car_number
               stats: stats
 
         # load evaluations
