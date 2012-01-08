@@ -5,8 +5,8 @@ vows   = require('vows')
 helper = require('./helper')
 querystring = require('querystring')
 
-p1 = { phone_number: "passenger1", password: "123456", nickname: "liufy", role: 1, state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
-d1 = { phone_number: "driver1", password: "123456", nickname: "cang", role: 2, state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
+p1 = { phone_number: "passenger1", password: "123456", name: "liufy", role: 1, state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
+d1 = { phone_number: "driver1", password: "123456", name: "cang", role: 2, state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
 
 # app init
 app = require('../webserver')
@@ -24,8 +24,8 @@ suite.addBatch
       helper.cleanDB app.db, ->
         helper.createUser app.db, p1, ->
           helper.createUser app.db, d1, ->
-            helper.signin_passenger passenger, { phone_number: "passenger1", password: "123456" }, (res, $) ->
-              helper.signin_driver driver, { phone_number: "driver1", password: "123456" }, (res, $) ->
+            helper.signin_passenger passenger, { phone_number: p1.phone_number, password: p1.password }, (res, $) ->
+              helper.signin_driver driver, { phone_number: d1.phone_number, password: d1.password }, (res, $) ->
                 self.callback()
 
       # tells vows it's async, or coffee will return last value, which breaks the framework.
@@ -42,12 +42,12 @@ suite.addBatch
         res.should.have.status(200)
         assert.equal(res.body.status, 0)
         assert.isTrue res.body.taxis.length > 0
-        assert.equal(res.body.taxis[0].phone_number, "driver1")
+        assert.equal(res.body.taxis[0].name, d1.name)
 
 suite.addBatch
   "should be able for passenger to send taxi call":
     topic: ->
-      data = { origin: { latitude: 118.2342, longitude: 32.43432 }, driver: "driver1",  key: 35432543 }
+      data = { origin: { latitude: 118.2342, longitude: 32.43432 }, driver: d1.name,  key: 35432543 }
       data = JSON.stringify(data)
       passenger.post '/service/create', { body: 'json_data=' + data}, this.callback
       return
@@ -120,7 +120,7 @@ suite.addBatch
       assert.equal(res.body.status, 0)
       assert.isTrue res.body.messages.length > 0
       assert.equal res.body.messages[0].type, "location-update"
-      assert.equal res.body.messages[0].phone_number, p1.phone_number
+      assert.equal res.body.messages[0].name, p1.name
 
 suite.addBatch
   'should be able for driver to update location':
@@ -145,7 +145,7 @@ suite.addBatch
       assert.equal(res.body.status, 0)
       assert.isTrue res.body.messages.length > 0
       assert.equal res.body.messages[0].type, "location-update"
-      assert.equal res.body.messages[0].phone_number, d1.phone_number
+      assert.equal res.body.messages[0].name, d1.name
 
 suite.addBatch
   'should be unable for passenger to evaluate uncompleted service':
@@ -354,7 +354,7 @@ suite.addBatch
 suite.addBatch
   'should be able for driver to get evaluations about passenger':
     topic: (res, $)->
-      data = {phone_number: p1.phone_number, end_time: new Date().valueOf()}
+      data = {name: p1.name, end_time: new Date().valueOf()}
       data = JSON.stringify(data)
       driver.get '/service/user/evaluations?' + querystring.stringify({json_data: data}), this.callback
       return
@@ -365,12 +365,12 @@ suite.addBatch
       assert.isNotNull(res.body.evaluations)
       assert.equal(res.body.evaluations[0].score, 3)
       assert.equal(res.body.evaluations[0].comment, 'bad!')
-      assert.equal(res.body.evaluations[0].evaluator, d1.nickname)
+      assert.equal(res.body.evaluations[0].evaluator, d1.name)
 
 suite.addBatch
   'should be able for passenger to get evaluations about driver':
     topic: (res, $)->
-      data = {phone_number: d1.phone_number, end_time: new Date().valueOf()}
+      data = {name: d1.name, end_time: new Date().valueOf()}
       data = JSON.stringify(data)
       driver.get '/service/user/evaluations?' + querystring.stringify({json_data: data}), this.callback
       return
@@ -381,7 +381,7 @@ suite.addBatch
       assert.isNotNull(res.body.evaluations)
       assert.equal(res.body.evaluations[0].score, 4)
       assert.equal(res.body.evaluations[0].comment, 'Good!')
-      assert.equal(res.body.evaluations[0].evaluator, p1.nickname)
+      assert.equal(res.body.evaluations[0].evaluator, p1.name)
 
 suite.addBatch
   'should be able for passenger to get history':
@@ -401,7 +401,7 @@ suite.addBatch
       assert.isObject(res.body.services[0].driver)
       assert.isUndefined(res.body.services[0].passenger)
       assert.equal(res.body.services[0].driver.phone_number, d1.phone_number)
-      assert.equal(res.body.services[0].driver.nickname, d1.nickname)
+      assert.equal(res.body.services[0].driver.name, d1.name)
       assert.equal(res.body.services[0].driver.car_number, d1.car_number)
       assert.isObject(res.body.services[0].driver.stats)
       assert.equal(res.body.services[0].driver.stats.average_score, 4)
@@ -432,7 +432,7 @@ suite.addBatch
       assert.isObject(res.body.services[0].passenger)
       assert.isUndefined(res.body.services[0].driver)
       assert.equal(res.body.services[0].passenger.phone_number, p1.phone_number)
-      assert.equal(res.body.services[0].passenger.nickname, p1.nickname)
+      assert.equal(res.body.services[0].passenger.name, p1.name)
       assert.isObject(res.body.services[0].passenger.stats)
       assert.equal(res.body.services[0].passenger.stats.average_score, 3)
       assert.equal(res.body.services[0].passenger.stats.service_count, 1)

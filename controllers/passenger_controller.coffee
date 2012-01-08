@@ -12,23 +12,23 @@ class PassengerController
   # passenger signup
   ##
   signup: (req, res) ->
-    unless req.json_data && req.json_data.phone_number && req.json_data.password && req.json_data.nickname
+    unless req.json_data && req.json_data.phone_number && req.json_data.password && req.json_data.name
       logger.warning("passenger signup - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    User.collection.findOne {$or: [{phone_number: req.json_data.phone_number}, {nickname: req.json_data.nickname}]}, (err, doc) ->
+    User.collection.findOne {$or: [{phone_number: req.json_data.phone_number}, {name: req.json_data.name}]}, (err, doc) ->
       if doc
         if doc.phone_number == req.json_data.phone_number
           logger.warning("driver signup - phone_number already registered: %s", req.json_data)
           return res.json { status: 101, message: "phone_number already registered" }
         else
-          logger.warning("driver signup - nickname is already taken: %s", req.json_data)
-          return res.json { status: 102, message: "nickname is already taken" }
+          logger.warning("driver signup - name is already taken: %s", req.json_data)
+          return res.json { status: 102, message: "name is already taken" }
 
       data =
         phone_number: req.json_data.phone_number
         password: req.json_data.password
-        nickname: req.json_data.nickname
+        name: req.json_data.name
         role: 1
         state: 0
       User.create(data)
@@ -49,32 +49,32 @@ class PassengerController
         return res.json { status: 101, message: "incorrect credential" }
 
       # set session info
-      req.session.user_id = passenger.phone_number
+      req.session.user_name = passenger.name
 
       passenger.stats = {average_score: 0, service_count: 0, evaluation_count: 0} unless passenger.stats
-      self = { phone_number: passenger.phone_number, nickname: passenger.nickname, stats: passenger.stats }
-      Service.collection.findOne { passenger: passenger.phone_number, $or:[{state: 1}, {state: 2}]}, (err, service) ->
+      self = { phone_number: passenger.phone_number, name: passenger.name, stats: passenger.stats }
+      Service.collection.findOne { passenger: passenger.name, $or:[{state: 1}, {state: 2}]}, (err, service) ->
         if err or !service
           self.state = 0
-          return res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
+          return res.json { status: 0, self: self, message: "welcome, #{passenger.name}" }
 
-        User.collection.findOne {phone_number: service.driver}, (err, driver) ->
+        User.collection.findOne {name: service.driver}, (err, driver) ->
           if err or !driver
             logger.error("can't find driver #{service.driver} for existing service %s", service)
             self.state = 0
-            return res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
+            return res.json { status: 0, self: self, message: "welcome, #{passenger.name}" }
 
           self.driver =
             car_number: driver.car_number
             phone_number: driver.phone_number
-            nickname: driver.nickname
+            name: driver.name
             location:
               longitude: driver.location[0]
               latitude: driver.location[1]
           self.state = if service.state == 1 then 1 else 2
 
-          # { status: 0|1|2|... [, message: "xxxx"], self:{ nickname:"liufy", phone_number:"13814171931", state: 0|1|2, driver: {car_number:"a186", nickname: "liuq", phone_number: "12345678900"[, latitude: 11.456789, longitude: 211.211985]}}} 
-          res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
+          # { status: 0|1|2|... [, message: "xxxx"], self:{ name:"liufy", phone_number:"13814171931", state: 0|1|2, driver: {car_number:"a186", name: "liuq", phone_number: "12345678900"[, latitude: 11.456789, longitude: 211.211985]}}} 
+          res.json { status: 0, self: self, message: "welcome, #{passenger.name}" }
   
   ##
   # passenger signout
@@ -94,7 +94,7 @@ class PassengerController
     loc = [req.json_data.longitude, req.json_data.latitude]
     User.collection.update {_id: req.current_user._id}, {$set: {location: loc}}
 
-    Service.collection.find({passenger: req.current_user.phone_number, state: 2}).toArray (err, docs) ->
+    Service.collection.find({passenger: req.current_user.name, state: 2}).toArray (err, docs) ->
       if err
         logger.error("passenger updateLocation - database error")
         return res.json { status: 3, message: "database error" }
@@ -103,13 +103,13 @@ class PassengerController
         message =
           receiver: doc.driver
           type: "location-update"
-          phone_number: req.current_user.phone_number
+          name: req.current_user.name
           location:
             longitude: req.json_data.longitude
             latitude: req.json_data.latitude
           timestamp: new Date().valueOf()
 
-        Message.collection.update({receiver: message.receiver, phone_number: message.phone_number, type: message.type}, message, {upsert: true})
+        Message.collection.update({receiver: message.receiver, name: message.name, type: message.type}, message, {upsert: true})
 
     res.json { status: 0 }
   
@@ -117,7 +117,7 @@ class PassengerController
   # passenger get messages
   ##
   refresh: (req, res) ->
-    User.getMessages req.current_user.phone_number, (messages)->
+    User.getMessages req.current_user.name, (messages)->
         res.json { status: 0, messages: messages }
 
 module.exports = PassengerController

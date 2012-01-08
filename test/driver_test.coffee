@@ -35,7 +35,7 @@ suite.addBatch
   'before sigin - ':
     'signup with incomplete info':
       topic: ->
-        data = { phone_number: "driver1", password: "123456", nickname:"cang" }
+        data = { phone_number: "driver1", password: "123456", name:"cang" }
         data = JSON.stringify(data)
         browser.post('/driver/signup', { body: 'json_data=' + data}, this.callback)
         return
@@ -69,7 +69,7 @@ suite.addBatch
 suite.addBatch
   "signup with complete info":
     topic: ->
-      data = { phone_number: "driver1", password: "123456", nickname: "cang", car_number: "ABCD" }
+      data = { phone_number: "driver1", password: "123456", name: "cang", car_number: "ABCD" }
       data = JSON.stringify(data)
       browser.post('/driver/signup', { body: 'json_data=' + data}, this.callback)
       return
@@ -81,7 +81,7 @@ suite.addBatch
 suite.addBatch
   "signup with duplicate phone number":
     topic: (e, rs)->
-      data = { phone_number: "driver1", password: "123456", nickname: "xxxx", car_number: "ABCD" }
+      data = { phone_number: "driver1", password: "123456", name: "xxxx", car_number: "ABCD" }
       data = JSON.stringify(data)
       browser.post '/driver/signup', { body: 'json_data=' + data}, this.callback
       return
@@ -91,9 +91,9 @@ suite.addBatch
       assert.equal(res.body.status, 101)
 
 suite.addBatch
-  "signup with duplicate nickname":
+  "signup with duplicate name":
     topic: (e, rs)->
-      data = { phone_number: "159234843234", password: "123456", nickname: "cang", car_number: "ABCD" }
+      data = { phone_number: "159234843234", password: "123456", name: "cang", car_number: "ABCD" }
       data = JSON.stringify(data)
       browser.post '/driver/signup', { body: 'json_data=' + data}, this.callback
       return
@@ -130,7 +130,7 @@ suite.addBatch
       assert.isNotNull(res.body.self.stats.service_count)
       assert.isNotNull(res.body.self.stats.average_score)
       assert.isNotNull(res.body.self.stats.evaluation_count)
-      assert.equal(res.body.self.nickname, 'cang')
+      assert.equal(res.body.self.name, 'cang')
 
 suite.addBatch
   'after sigin - ':

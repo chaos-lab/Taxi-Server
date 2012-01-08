@@ -26,7 +26,7 @@ class TaxiCallController
           doc.stats = {average_score: 0, service_count: 0, evaluation_count: 0} unless doc.stats
           taxis.push
             phone_number: doc.phone_number
-            nickname: doc.nickname
+            name: doc.name
             car_number: doc.car_number
             longitude: doc.location[0]
             latitude: doc.location[1]
@@ -43,13 +43,13 @@ class TaxiCallController
       logger.warning("Service create - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    User.collection.findOne {phone_number: req.json_data.driver}, (err, doc) ->
+    User.collection.findOne {name: req.json_data.driver}, (err, doc) ->
       if !doc || doc.state == 0 || doc.taxi_state != 1
         logger.warning("Service create - driver #{req.json_data.driver} can't accept taxi call for now %s", doc)
         return res.json { status: 101, message: "driver can't accept taxi call for now" }
 
       # only one active service is allowed for a user at the same time
-      Service.collection.findOne {passenger: req.current_user.phone_number, $or:[{state:1}, {state:2}]}, (err, doc) ->
+      Service.collection.findOne {passenger: req.current_user.name, $or:[{state:1}, {state:2}]}, (err, doc) ->
         # cancel existing services
         if doc
           Service.collection.update({_id: doc._id}, {$set: {state: -2}})
@@ -67,7 +67,7 @@ class TaxiCallController
         Service.uniqueID (id)->
           data =
             driver: req.json_data.driver
-            passenger: req.current_user.phone_number
+            passenger: req.current_user.name
             state: 1
             origin: origin
             destination: destination
@@ -81,7 +81,7 @@ class TaxiCallController
             type: "call-taxi"
             passenger:
               phone_number: req.current_user.phone_number
-              nickname:req.current_user.nickname
+              name:req.current_user.name
             origin:
               longitude: origin[0]
               latitude: origin[1]
@@ -131,7 +131,7 @@ class TaxiCallController
       logger.warning("Service cancel - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    query = if req.json_data.id then {_id: req.json_data.id} else {key: req.json_data.key, passenger: req.current_user.phone_number}
+    query = if req.json_data.id then {_id: req.json_data.id} else {key: req.json_data.key, passenger: req.current_user.name}
 
     Service.collection.findOne query, (err, doc) ->
       # can't cancel completed service or rejected service
@@ -170,7 +170,7 @@ class TaxiCallController
       Service.collection.update({_id: doc._id}, {$set: {state: 3, updated_at: new Date()}})
       # set taxi state to idle
       User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 1}, $inc:{"stats.service_count": 1}})
-      User.collection.update({phone_number: doc.passenger}, {$inc:{"stats.service_count": 1}})
+      User.collection.update({name: doc.passenger}, {$inc:{"stats.service_count": 1}})
 
       message =
         receiver: doc.passenger
@@ -196,11 +196,11 @@ class TaxiCallController
         logger.warning("Service evaluate - service can't be evaluated %s", service)
         return res.json { status: 101, message: "only completed service can be evaluated" }
 
-      unless service.driver == req.current_user.phone_number || service.passenger == req.current_user.phone_number
+      unless service.driver == req.current_user.name || service.passenger == req.current_user.name
         logger.warning("Service evaluate - you can't evaluate this service. %s", service)
         return res.json { status: 102, message: "you can't evaluate this service" }
 
-      Evaluation.collection.findOne {service_id: req.json_data.id, "evaluator": req.current_user.phone_number}, (err, doc) ->
+      Evaluation.collection.findOne {service_id: req.json_data.id, "evaluator": req.current_user.name}, (err, doc) ->
         if doc
           logger.warning("Service evaluate - you have evaluated this service %s", doc)
           return res.json { status: 103, message: "you have evaluated this service" }
@@ -209,7 +209,7 @@ class TaxiCallController
         # create evaluation
         evaluation =
           service_id: service._id
-          evaluator: req.current_user.phone_number
+          evaluator: req.current_user.name
           target: target
           role: req.current_user.role
           score: req.json_data.score
@@ -246,14 +246,14 @@ class TaxiCallController
   # get evaluations of a user
   ##
   getUserEvaluations: (req, res) ->
-    unless req.json_data && req.json_data.phone_number && req.json_data.end_time
+    unless req.json_data && req.json_data.name && req.json_data.end_time
       logger.warning("Service getEvaluations - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     # set default count to 20
     req.json_data.count = req.json_data.count || 20
 
-    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, user) ->
+    User.collection.findOne {name: req.json_data.name}, (err, user) ->
       if err
         logger.error("Service getUserEvaluations - database error")
         return res.json { status: 3, message: "database error" }
@@ -262,7 +262,7 @@ class TaxiCallController
         logger.warning("driver signin - database error")
         return res.json { status: 101, message: "database error" }
 
-      Evaluation.collection.find({created_at: {$lte: new Date(req.json_data.end_time)}, "target":user.phone_number}, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, docs)->
+      Evaluation.collection.find({created_at: {$lte: new Date(req.json_data.end_time)}, "target":user.name}, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, docs)->
         if err
           logger.error("Service getUserEvaluations - database error")
           return res.json { status: 3, message: "database error" }
@@ -277,17 +277,17 @@ class TaxiCallController
             created_at: evaluation.created_at.valueOf()
             evaluator: evaluation.evaluator
 
-        # set evaluator nickname. mongodb doesn't support join
-        User.collection.find({phone_number: {$in: keys}}).toArray (err, docs)->
+        # set evaluator name. mongodb doesn't support join
+        User.collection.find({name: {$in: keys}}).toArray (err, docs)->
           if err
             logger.error("Service getUserEvaluations - database error")
             return res.json { status: 3, message: "database error" }
 
           evaluators = {}
-          evaluators[evaluator.phone_number] = evaluator for evaluator in docs
+          evaluators[evaluator.name] = evaluator for evaluator in docs
 
-          # set evaluator to nickname
-          evaluation.evaluator = evaluators[evaluation.evaluator].nickname for evaluation in evals
+          # set evaluator to name
+          evaluation.evaluator = evaluators[evaluation.evaluator].name for evaluation in evals
 
           return res.json { status: 0, evaluations: evals}
 
@@ -303,8 +303,8 @@ class TaxiCallController
     req.json_data.count = req.json_data.count || 10
     req.json_data.start_time = req.json_data.start_time || new Date(2011, 11, 11)
 
-    driver_query = {state: {$in: [-3, -2, -1, 3]}, driver: req.current_user.phone_number, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
-    passenger_query = {state: {$in: [-3, -2, -1, 3]}, passenger: req.current_user.phone_number, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
+    driver_query = {state: {$in: [-3, -2, -1, 3]}, driver: req.current_user.name, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
+    passenger_query = {state: {$in: [-3, -2, -1, 3]}, passenger: req.current_user.name, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
     query = if req.current_user.role == 1 then passenger_query else driver_query
 
     Service.collection.find(query, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, services)->
@@ -341,13 +341,13 @@ class TaxiCallController
             name: service.destination[2]
 
       # load details user info
-      User.collection.find({phone_number: {$in: user_keys}}).toArray (err, users)->
+      User.collection.find({name: {$in: user_keys}}).toArray (err, users)->
         if err
           logger.error("Service getUserEvaluations - database error")
           return res.json { status: 3, message: "database error" }
 
         user_map = {}
-        user_map[user.phone_number] = user for user in users
+        user_map[user.name] = user for user in users
 
         # set detailed user info
         for service in services
@@ -355,16 +355,16 @@ class TaxiCallController
             delete service.passenger
             stats = if user_map[service.driver].stats then user_map[service.driver].stats else {average_score: 0, service_count: 0, evaluation_count: 0}
             service.driver =
-              phone_number: service.driver
-              nickname: user_map[service.driver].nickname
+              phone_number: user_map[service.driver].phone_number
+              name: service.driver
               car_number: user_map[service.driver].car_number
               stats: stats
           else
             delete service.driver
             stats = if user_map[service.passenger].stats then user_map[service.passenger].stats else {average_score: 0, service_count: 0, evaluation_count: 0}
             service.passenger =
-              phone_number: service.passenger
-              nickname: user_map[service.passenger].nickname
+              phone_number: user_map[service.passenger].phone_number
+              name: service.passenger
               stats: stats
 
         # load evaluations

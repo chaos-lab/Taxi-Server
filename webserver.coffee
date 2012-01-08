@@ -115,10 +115,10 @@ app.use (req, res, next) ->
     catch e
       return res.json {status: 2, message:"incorrect format in preprocessing"}
 
-  unless req.session.user_id
+  unless req.session.user_name
     return next()
 
-  User.collection.findOne { phone_number: req.session.user_id }, {}, (err, doc)->
+  User.collection.findOne { name: req.session.user_name }, {}, (err, doc)->
     if doc
       User.collection.update {_id: doc._id}, {$set: {last_active_at: new Date(), state: 2}}
       req.current_user = doc

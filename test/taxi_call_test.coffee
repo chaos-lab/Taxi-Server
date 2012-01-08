@@ -13,18 +13,18 @@ driver = tobi.createBrowser(app)
 # Batches  are executed sequentially.
 # Contexts are executed in parallel.
 suite = vows.describe('taxi call & cancel test')
+p1 = { phone_number: "passenger1", password: "123456", name: "liufy", role: 1, state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
+d1 = { phone_number: "driver1", password: "123456", name: "cang", role: 2, state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
 
 suite.addBatch
   "setup":
     topic: ->
       self = this
-      p1 = { phone_number: "passenger1", password: "123456", nickname: "liufy", role: 1, state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
-      d1 = { phone_number: "driver1", password: "123456", nickname: "cang", role: 2, state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
       helper.cleanDB app.db, ->
         helper.createUser app.db, p1, ->
           helper.createUser app.db, d1, ->
-            helper.signin_passenger passenger, { phone_number: "passenger1", password: "123456" }, (res, $) ->
-              helper.signin_driver driver, { phone_number: "driver1", password: "123456" }, (res, $) ->
+            helper.signin_passenger passenger, { phone_number: p1.phone_number, password: "123456" }, (res, $) ->
+              helper.signin_driver driver, { phone_number: d1.phone_number, password: "123456" }, (res, $) ->
                 self.callback()
 
       # tells vows it's async, or coffee will return last value, which breaks the framework.
@@ -41,7 +41,7 @@ suite.addBatch
         res.should.have.status(200)
         assert.equal(res.body.status, 0)
         assert.isTrue res.body.taxis.length > 0
-        assert.equal(res.body.taxis[0].phone_number, "driver1")
+        assert.equal(res.body.taxis[0].name, d1.name)
         assert.isNotNull(res.body.taxis[0].stats)
         assert.isNotNull(res.body.taxis[0].stats.service_count)
         assert.isNotNull(res.body.taxis[0].stats.average_score)
@@ -50,7 +50,7 @@ suite.addBatch
 suite.addBatch
   "should be able for passenger to send taxi call":
     topic: ->
-      data = { origin: { latitude: 118.2342, longitude: 32.43432 }, driver: "driver1",  key: 35432543 }
+      data = { origin: { latitude: 118.2342, longitude: 32.43432 }, driver: d1.name,  key: 35432543 }
       data = JSON.stringify(data)
       passenger.post '/service/create', { body: 'json_data=' + data}, this.callback
       return

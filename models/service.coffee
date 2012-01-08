@@ -2,7 +2,7 @@
 mongodb = require('mongodb')
 
 # service schema
-# { id: 4534, state: 1, driver: "13313145", passenger: "13954355435", origin:[23.454, 132.54554, "location1"], destination:[23.454, 132.54554, "location2"], created_at: Date, updated_at: Date }
+# { id: 4534, state: 1, driver: "liuq", passenger: "souriki", origin:[23.454, 132.54554, "location1"], destination:[23.454, 132.54554, "location2"], created_at: Date, updated_at: Date }
 
 module.exports = Service =
   setup: (db) ->
