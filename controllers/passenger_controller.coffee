@@ -92,8 +92,7 @@ class PassengerController
   # passenger update location
   ##
   updateLocation: (req, res) ->
-    unless req.json_data && !_.isUndefined(req.json_data.latitude) && _.isNumber(req.json_data.latitude) &&
-           !_.isUndefined(req.json_data.longitude) && _.isNumber(req.json_data.longitude)
+    unless req.json_data && _.isNumber(req.json_data.latitude) && _.isNumber(req.json_data.longitude)
       return res.json { status: 2, message: "incorrect data format" }
 
     loc = [req.json_data.longitude, req.json_data.latitude]

@@ -39,13 +39,11 @@ class TaxiCallController
   # create taxi call request
   ##
   create: (req, res) ->
-    unless !_.isEmpty(req.json_data) && !_.isUndefined(req.json_data.key) && _.isNumber(req.json_data.key) &&
+    unless !_.isEmpty(req.json_data) && _.isNumber(req.json_data.key) &&
            req.json_data.driver && _.isString(req.json_data.driver) && !_.isEmpty(req.json_data.driver) &&
-           (!req.json_data.origin || (!_.isUndefined(req.json_data.origin.longitude) && _.isNumber(req.json_data.origin.longitude) &&
-                                      !_.isUndefined(req.json_data.origin.latitude) &&  _.isNumber(req.json_data.origin.latitude) &&
+           (!req.json_data.origin || (_.isNumber(req.json_data.origin.longitude) && _.isNumber(req.json_data.origin.latitude) &&
                                       (!req.json_data.origin.name || (_.isString(req.json_data.origin.name) && !_.isEmpty(req.json_data.origin.name))))) &&
-           (!req.json_data.destination || (!_.isUndefined(req.json_data.destination.longitude) && _.isNumber(req.json_data.destination.longitude) &&
-                                           !_.isUndefined(req.json_data.destination.latitude) && _.isNumber(req.json_data.destination.latitude) &&
+           (!req.json_data.destination || (_.isNumber(req.json_data.destination.longitude) && _.isNumber(req.json_data.destination.latitude) &&
                                            (!req.json_data.destination.name || (_.isString(req.json_data.destination.name) && !_.isEmpty(req.json_data.destination.name)))))
       logger.warning("Service create - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
@@ -104,8 +102,7 @@ class TaxiCallController
   # driver reply to a taxi call
   ##
   reply: (req, res) ->
-    unless !_.isEmpty(req.json_data) && !_.isUndefined(req.json_data.id) && _.isNumber(req.json_data.id) &&
-           !_.isUndefined(req.json_data.accept) && _.isBoolean(req.json_data.accept)
+    unless !_.isEmpty(req.json_data) && _.isNumber(req.json_data.id) && _.isBoolean(req.json_data.accept)
       logger.warning("Service reply - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -135,8 +132,7 @@ class TaxiCallController
   # passenger cancel a taxi call
   ##
   cancel: (req, res) ->
-    unless !_.isEmpty(req.json_data) && ((!_.isUndefined(req.json_data.id) && _.isNumber(req.json_data.id)) ||
-                                         (!_.isUndefined(req.json_data.key) && _.isNumber(req.json_data.key)) )
+    unless !_.isEmpty(req.json_data) && (_.isNumber(req.json_data.id) || _.isNumber(req.json_data.key))
       logger.warning("Service cancel - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -166,7 +162,7 @@ class TaxiCallController
   # driver notify the completion of a service
   ##
   complete: (req, res) ->
-    unless !_.isEmpty(req.json_data) && !_.isUndefined(req.json_data.id) && _.isNumber(req.json_data.id)
+    unless !_.isEmpty(req.json_data) && _.isNumber(req.json_data.id)
       logger.warning("Service complete - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -195,8 +191,7 @@ class TaxiCallController
   # evaluate a service
   ##
   evaluate: (req, res) ->
-    unless !_.isEmpty(req.json_data) && !_.isUndefined(req.json_data.id) && _.isNumber(req.json_data.id) &&
-           !_.isUndefined(req.json_data.score) && _.isNumber(req.json_data.score) &&
+    unless !_.isEmpty(req.json_data) && _.isNumber(req.json_data.id) && _.isNumber(req.json_data.score) &&
            (!req.json_data.comment || (_.isString(req.json_data.comment) && !_.isEmpty(req.json_data.comment)))
       logger.warning("Service evaluate - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
@@ -263,7 +258,7 @@ class TaxiCallController
   ##
   getUserEvaluations: (req, res) ->
     unless !_.isEmpty(req.json_data) && req.json_data.name && _.isString(req.json_data.name) && !_.isEmpty(req.json_data.name) &&
-           !_.isUndefined(req.json_data.end_time) && _.isNumber(req.json_data.end_time) &&
+           _.isNumber(req.json_data.end_time) &&
            (_.isUndefined(req.json_data.count) || _.isNumber(req.json_data.count))
       logger.warning("Service getEvaluations - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
@@ -313,7 +308,7 @@ class TaxiCallController
   # get history of services related to current user
   ##
   history: (req, res) ->
-    unless !_.isEmpty(req.json_data) && !_.isUndefined(req.json_data.end_time) && _.isNumber(req.json_data.end_time) &&
+    unless !_.isEmpty(req.json_data) && _.isNumber(req.json_data.end_time) &&
            (_.isUndefined(req.json_data.count) || _.isNumber(req.json_data.count)) &&
            (_.isUndefined(req.json_data.start_time) || _.isNumber(req.json_data.start_time))
       logger.warning("Service history - incorrect data format %s", req.json_data)

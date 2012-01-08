@@ -116,8 +116,7 @@ class DriverController
   # driver update location
   ##
   updateLocation: (req, res) ->
-    unless req.json_data && !_.isUndefined(req.json_data.latitude) && _.isNumber(req.json_data.latitude) &&
-           !_.isUndefined(req.json_data.longitude) && _.isNumber(req.json_data.longitude)
+    unless req.json_data && _.isNumber(req.json_data.latitude) && _.isNumber(req.json_data.longitude)
       logger.warning("driver updateLocation - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -147,7 +146,7 @@ class DriverController
   # driver update taxi state
   ##
   updateState: (req, res) ->
-    unless req.json_data && !_.isUndefined(req.json_data.state) && _.isNumber(req.json_data.state)
+    unless req.json_data && _.isNumber(req.json_data.state)
       logger.warning("driver updateState - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
