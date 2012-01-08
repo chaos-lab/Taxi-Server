@@ -1,4 +1,6 @@
 require('coffee-script')
+var fs = require('fs')
+var Logger = require('log')
 
 var env = process.env.NODE_ENV || 'development'
 process.env.NODE_ENV = env

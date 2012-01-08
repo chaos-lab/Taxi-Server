@@ -1,7 +1,5 @@
 # controllers for passenger
 
-winston = require('winston')
-
 User = require('../models/user')
 Service = require('../models/service')
 Message = require('../models/message')
@@ -15,16 +13,16 @@ class PassengerController
   ##
   signup: (req, res) ->
     unless req.json_data && req.json_data.phone_number && req.json_data.password && req.json_data.nickname
-      winston.warn("passenger signup - incorrect data format", req.json_data)
+      logger.warning("passenger signup - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {$or: [{phone_number: req.json_data.phone_number}, {nickname: req.json_data.nickname}]}, (err, doc) ->
       if doc
         if doc.phone_number == req.json_data.phone_number
-          winston.warn("driver signup - phone_number already registered:", req.json_data)
+          logger.warning("driver signup - phone_number already registered: %s", req.json_data)
           return res.json { status: 101, message: "phone_number already registered" }
         else
-          winston.warn("driver signup - nickname is already taken:", req.json_data)
+          logger.warning("driver signup - nickname is already taken: %s", req.json_data)
           return res.json { status: 102, message: "nickname is already taken" }
 
       data =
@@ -42,12 +40,12 @@ class PassengerController
   ##
   signin: (req, res) ->
     unless req.json_data && req.json_data.phone_number && req.json_data.password
-      winston.warn("passenger signin - incorrect data format", req.json_data)
+      logger.warning("passenger signin - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {phone_number: req.json_data.phone_number}, (err, passenger) ->
       unless passenger && req.json_data.password == passenger.password && passenger.role == 1
-        winston.warn("passenger signin - incorrect credential", req.json_data)
+        logger.warning("passenger signin - incorrect credential %s", req.json_data)
         return res.json { status: 101, message: "incorrect credential" }
 
       # set session info
@@ -62,7 +60,7 @@ class PassengerController
 
         User.collection.findOne {phone_number: service.driver}, (err, driver) ->
           if err or !driver
-            winston.warn("can't find driver #{service.driver} for existing service", service)
+            logger.error("can't find driver #{service.driver} for existing service %s", service)
             self.state = 0
             return res.json { status: 0, self: self, message: "welcome, #{passenger.nickname}" }
 
@@ -91,7 +89,6 @@ class PassengerController
   ##
   updateLocation: (req, res) ->
     unless req.json_data && req.json_data.latitude && req.json_data.longitude
-      winston.warn("passenger updateLocation - incorrect data format", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     loc = [req.json_data.longitude, req.json_data.latitude]
@@ -99,7 +96,7 @@ class PassengerController
 
     Service.collection.find({passenger: req.current_user.phone_number, state: 2}).toArray (err, docs) ->
       if err
-        winston.warn("passenger updateLocation - database error")
+        logger.error("passenger updateLocation - database error")
         return res.json { status: 3, message: "database error" }
 
       for doc in docs

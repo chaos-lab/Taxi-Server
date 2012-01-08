@@ -1,7 +1,5 @@
 # controllers for authorization
 
-winston = require('winston')
-
 class AuthorizationController
 
   constructor: ->
@@ -13,7 +11,7 @@ class AuthorizationController
     if req.current_user
       next()
     else
-      winston.warn("AuthorizationController", "Unauthorized driver access to #{req.url}")
+      logger.warning("AuthorizationController - %s", "Unauthorized driver access to #{req.url}")
       res.json { status: 1, message: 'Unauthorized' }
 
   ##
@@ -23,7 +21,7 @@ class AuthorizationController
     if (req.current_user && req.current_user.role == 1)
       next()
     else
-      winston.warn("AuthorizationController", "Unauthorized driver access to #{req.url}")
+      logger.warning("AuthorizationController - %s", "Unauthorized driver access to #{req.url}")
       res.json { status: 1, message: 'Unauthorized' }
 
   ##
@@ -33,7 +31,7 @@ class AuthorizationController
     if (req.current_user && req.current_user.role == 2)
       next()
     else
-      winston.warn("AuthorizationController", "Unauthorized driver access to #{req.url}")
+      logger.warning("AuthorizationController - %s", "Unauthorized driver access to #{req.url}")
       res.json { status: 1, message: 'Unauthorized' }
 
 module.exports = AuthorizationController

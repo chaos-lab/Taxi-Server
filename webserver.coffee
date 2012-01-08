@@ -1,7 +1,20 @@
 express = require('express')
-winston = require('winston')
 mongodb = require('mongodb')
 mongoStore = require('connect-mongodb')
+Logger = require('log')
+fs = require('fs')
+
+######################################################
+# logger modification to support object params
+######################################################
+log_old = Logger.prototype.log
+Logger.prototype.log = ->
+  args = []
+  for arg in arguments[1]
+    arg = JSON.stringify(arg) if typeof(arg) == 'object'
+    args.push(arg)
+  arguments[1] = args
+  log_old.apply(this, arguments)
 
 ######################################################
 # mongodb setup
@@ -49,7 +62,7 @@ app.start = ->
   app.db.open ->
     app.listen config.webserver.port, ->
       addr = app.address()
-      winston.info('app listening on http://' + addr.address + ':' + addr.port)
+      logger.info('app listening on http://' + addr.address + ':' + addr.port)
 
 app.db = db
 ######################################################
@@ -68,15 +81,14 @@ app.configure ->
     showStack : true
 
 app.configure 'test', ->
-  winston.remove(winston.transports.Console)
+  global.logger = new Logger('info', fs.createWriteStream('test.log'))
 
 app.configure 'development', 'production', ->
   # for logging
-  winston.add(winston.transports.File, { filename: "#{process.env.NODE_ENV}.log", handleExceptions: true })
-  winston.handleExceptions()
-  # stub winston to use with logger middleware
-  winston.write = (data) -> winston.info(data)
-  app.use(express.logger({stream: winston}))
+  global.logger = new Logger('info')
+  # stub logger to use with logger middleware
+  logger.write = (data) -> logger.info(data)
+  app.use(express.logger({stream: logger}))
 
   # don't use scheduler while test
   require('./controllers/scheduler')
@@ -84,11 +96,11 @@ app.configure 'development', 'production', ->
   # logging params & response
   app.use (req, res, next) ->
     res.on "finish", ->
-      winston.info("params:", req.json_data) if req.json_data
+      logger.info("params:", req.json_data) if req.json_data
 
     stub = res.json
     res.json = (data) ->
-      winston.info("response:", data)
+      logger.info("response:", data)
       stub.apply(res, [data])
 
     next()

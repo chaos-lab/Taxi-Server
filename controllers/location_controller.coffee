@@ -1,6 +1,5 @@
 # location controller
 
-winston = require('winston')
 Location = require('../models/location')
 
 class LocationController
@@ -11,7 +10,7 @@ class LocationController
   ##
   create: (req, res) ->
     unless req.json_data && req.json_data.latitude && req.json_data.longitude && req.json_data.name
-      winston.warn("LocationController create - incorrect data format", req.json_data)
+      logger.warning("LocationController create - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     location =

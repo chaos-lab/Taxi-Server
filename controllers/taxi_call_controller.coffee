@@ -1,7 +1,5 @@
 # taxi call controller
 
-winston = require('winston')
-
 User = require('../models/user')
 Service = require('../models/service')
 Message = require('../models/message')
@@ -18,7 +16,7 @@ class TaxiCallController
 
     User.collection.find({ role:2, state:{$gte: 1}, taxi_state:1, location:{$exists: true} }).toArray (err, docs)->
       if err
-        winston.warn("Service getNearTaxis - database error")
+        logger.warning("Service getNearTaxis - database error")
         return res.json { status: 3, message: "database error" }
 
 
@@ -42,12 +40,12 @@ class TaxiCallController
   create: (req, res) ->
     unless req.json_data && req.json_data.key && req.json_data.driver && (!req.json_data.origin || (req.json_data.origin.longitude && req.json_data.origin.latitude)) && (!req.json_data.destination || (req.json_data.destination.longitude && req.json_data.destination.latitude))
       console.dir(req.json_data)
-      winston.warn("Service create - incorrect data format", req.json_data)
+      logger.warning("Service create - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {phone_number: req.json_data.driver}, (err, doc) ->
       if !doc || doc.state == 0 || doc.taxi_state != 1
-        winston.warn("Service create - driver #{req.json_data.driver} can't accept taxi call for now", doc)
+        logger.warning("Service create - driver #{req.json_data.driver} can't accept taxi call for now %s", doc)
         return res.json { status: 101, message: "driver can't accept taxi call for now" }
 
       # only one active service is allowed for a user at the same time
@@ -100,13 +98,13 @@ class TaxiCallController
   ##
   reply: (req, res) ->
     unless req.json_data && req.json_data.id
-      winston.warn("Service reply - incorrect data format", req.json_data)
+      logger.warning("Service reply - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
       # service doesn't exist, already cancelled, etc
       unless doc && doc.state == 1
-        winston.warn("Service reply - service can't be replied", doc)
+        logger.warning("Service reply - service can't be replied %s", doc)
         return res.json { status: 101, message: "service can't be replied" }
 
       state = if req.json_data.accept then 2 else -1
@@ -130,7 +128,7 @@ class TaxiCallController
   ##
   cancel: (req, res) ->
     unless req.json_data && (req.json_data.id || req.json_data.key)
-      winston.warn("Service cancel - incorrect data format", req.json_data)
+      logger.warning("Service cancel - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     query = if req.json_data.id then {_id: req.json_data.id} else {key: req.json_data.key, passenger: req.current_user.phone_number}
@@ -138,7 +136,7 @@ class TaxiCallController
     Service.collection.findOne query, (err, doc) ->
       # can't cancel completed service or rejected service
       if !doc || (doc.state != 2 && doc.state != 1)
-        winston.warn("Service reply - service can't be cancelled", doc)
+        logger.warning("Service reply - service can't be cancelled %s", doc)
         return res.json { status: 101, message: "service can't be cancelled" }
 
       # update service state
@@ -160,13 +158,13 @@ class TaxiCallController
   ##
   complete: (req, res) ->
     unless req.json_data && req.json_data.id
-      winston.warn("Service complete - incorrect data format", req.json_data)
+      logger.warning("Service complete - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
       # can only complete accepted service
       unless doc && doc.state == 2
-        winston.warn("Service complete - service can't be completed", doc)
+        logger.warning("Service complete - service can't be completed %s", doc)
         return res.json { status: 101, message: "only accepted service can be completed" }
 
       Service.collection.update({_id: doc._id}, {$set: {state: 3, updated_at: new Date()}})
@@ -189,22 +187,22 @@ class TaxiCallController
   ##
   evaluate: (req, res) ->
     unless req.json_data && req.json_data.id && req.json_data.score
-      winston.warn("Service evaluate - incorrect data format", req.json_data)
+      logger.warning("Service evaluate - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     Service.collection.findOne {_id: req.json_data.id}, (err, service) ->
       # can only evaluate completed service
       unless service.state == 3
-        winston.warn("Service evaluate - service can't be evaluated", service)
+        logger.warning("Service evaluate - service can't be evaluated %s", service)
         return res.json { status: 101, message: "only completed service can be evaluated" }
 
       unless service.driver == req.current_user.phone_number || service.passenger == req.current_user.phone_number
-        winston.warn("Service evaluate - you can't evaluate this service.", service)
+        logger.warning("Service evaluate - you can't evaluate this service. %s", service)
         return res.json { status: 102, message: "you can't evaluate this service" }
 
       Evaluation.collection.findOne {service_id: req.json_data.id, "evaluator": req.current_user.phone_number}, (err, doc) ->
         if doc
-          winston.warn("Service evaluate - you have evaluated this service", doc)
+          logger.warning("Service evaluate - you have evaluated this service %s", doc)
           return res.json { status: 103, message: "you have evaluated this service" }
 
         target = if req.current_user.role == 1 then service.driver else service.passenger
@@ -226,12 +224,12 @@ class TaxiCallController
   ##
   getEvaluations: (req, res) ->
     unless req.json_data && req.json_data.ids
-      winston.warn("Service getEvaluations - incorrect data format", req.json_data)
+      logger.warning("Service getEvaluations - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     Evaluation.collection.find({service_id:{$in: req.json_data.ids}}).toArray (err, docs)->
       if err
-        winston.warn("Service getEvaluations - database error")
+        logger.error("Service getEvaluations - database error")
         return res.json { status: 3, message: "database error" }
 
       result =  {status: 0}
@@ -249,7 +247,7 @@ class TaxiCallController
   ##
   getUserEvaluations: (req, res) ->
     unless req.json_data && req.json_data.phone_number && req.json_data.end_time
-      winston.warn("Service getEvaluations - incorrect data format", req.json_data)
+      logger.warning("Service getEvaluations - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     # set default count to 20
@@ -257,16 +255,16 @@ class TaxiCallController
 
     User.collection.findOne {phone_number: req.json_data.phone_number}, (err, user) ->
       if err
-        winston.warn("Service getUserEvaluations - database error")
+        logger.error("Service getUserEvaluations - database error")
         return res.json { status: 3, message: "database error" }
 
       if !user
-        winston.warn("driver signin - database error")
+        logger.warning("driver signin - database error")
         return res.json { status: 101, message: "database error" }
 
       Evaluation.collection.find({created_at: {$lte: new Date(req.json_data.end_time)}, "target":user.phone_number}, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, docs)->
         if err
-          winston.warn("Service getUserEvaluations - database error")
+          logger.error("Service getUserEvaluations - database error")
           return res.json { status: 3, message: "database error" }
 
         evals = []
@@ -282,7 +280,7 @@ class TaxiCallController
         # set evaluator nickname. mongodb doesn't support join
         User.collection.find({phone_number: {$in: keys}}).toArray (err, docs)->
           if err
-            winston.warn("Service getUserEvaluations - database error")
+            logger.error("Service getUserEvaluations - database error")
             return res.json { status: 3, message: "database error" }
 
           evaluators = {}
@@ -298,7 +296,7 @@ class TaxiCallController
   ##
   history: (req, res) ->
     unless req.json_data && req.json_data.end_time
-      winston.warn("Service history - incorrect data format", req.json_data)
+      logger.warning("Service history - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     # set default params
@@ -311,7 +309,7 @@ class TaxiCallController
 
     Service.collection.find(query, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, services)->
       if err
-        winston.warn("Service history - database error")
+        logger.warning("Service history - database error")
         return res.json { status: 3, message: "database error" }
 
       service_map = {}
@@ -345,7 +343,7 @@ class TaxiCallController
       # load details user info
       User.collection.find({phone_number: {$in: user_keys}}).toArray (err, users)->
         if err
-          winston.warn("Service getUserEvaluations - database error")
+          logger.error("Service getUserEvaluations - database error")
           return res.json { status: 3, message: "database error" }
 
         user_map = {}
@@ -372,7 +370,7 @@ class TaxiCallController
         # load evaluations
         Evaluation.collection.find({service_id:{$in: service_keys}}).toArray (err, evaluations)->
           if err
-            winston.warn("Service getEvaluations - database error")
+            logger.error("Service getEvaluations - database error")
             return res.json { status: 3, message: "database error" }
 
           # set evaluations
