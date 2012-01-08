@@ -11,5 +11,6 @@
       , "vows": "0.6.0"
       , "connect-mongodb": "1.0.0"
       , "log": "1.2.0"
+      , "underscore": "1.2.4"
     }
 }

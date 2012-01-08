@@ -3,6 +3,7 @@
 User = require('../models/user')
 Service = require('../models/service')
 Message = require('../models/message')
+_ = require('underscore')
 
 class PassengerController
 
@@ -12,7 +13,9 @@ class PassengerController
   # passenger signup
   ##
   signup: (req, res) ->
-    unless req.json_data && req.json_data.phone_number && req.json_data.password && req.json_data.name
+    unless req.json_data && _.isString(req.json_data.phone_number) && !_.isEmpty(req.json_data.phone_number) &&
+           _.isString(req.json_data.password) && !_.isEmpty(req.json_data.password) &&
+           _.isString(req.json_data.name) && !_.isEmpty(req.json_data.name)
       logger.warning("passenger signup - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -39,7 +42,8 @@ class PassengerController
   # passenger signin
   ##
   signin: (req, res) ->
-    unless req.json_data && req.json_data.phone_number && req.json_data.password
+    unless req.json_data && _.isString(req.json_data.phone_number) && !_.isEmpty(req.json_data.phone_number) &&
+           _.isString(req.json_data.password) && !_.isEmpty(req.json_data.password)
       logger.warning("passenger signin - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
@@ -88,7 +92,8 @@ class PassengerController
   # passenger update location
   ##
   updateLocation: (req, res) ->
-    unless req.json_data && req.json_data.latitude && req.json_data.longitude
+    unless req.json_data && !_.isUndefined(req.json_data.latitude) && _.isNumber(req.json_data.latitude) &&
+           !_.isUndefined(req.json_data.longitude) && _.isNumber(req.json_data.longitude)
       return res.json { status: 2, message: "incorrect data format" }
 
     loc = [req.json_data.longitude, req.json_data.latitude]
