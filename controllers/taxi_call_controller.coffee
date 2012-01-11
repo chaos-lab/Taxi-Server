@@ -20,7 +20,6 @@ class TaxiCallController
         logger.warning("Service getNearTaxis - database error")
         return res.json { status: 3, message: "database error" }
 
-
       for doc in docs
         if doc.location
           # set default stats
@@ -197,6 +196,10 @@ class TaxiCallController
       return res.json { status: 2, message: "incorrect data format" }
 
     Service.collection.findOne {_id: req.json_data.id}, (err, service) ->
+      unless service
+        logger.warning("Service evaluate - service not found %", req.json_data.id)
+        return res.json { status: 104, message: "service not found" }
+
       # can only evaluate completed service
       unless service.state == 3
         logger.warning("Service evaluate - service can't be evaluated %s", service)
@@ -397,5 +400,29 @@ class TaxiCallController
               service_map[evaluation.service_id]["driver_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
 
           res.json { status: 0, services: services }
+
+  ##
+  # update location physical name
+  ##
+  updateLocationName: (req, res) ->
+    unless !_.isEmpty(req.json_data) && _.isNumber(req.json_data.id) &&
+           _.isString(req.json_data.type) && (req.json_data.type == "origin" || req.json_data.type == "destination") &&
+           _.isString(req.json_data.name) && !_.isEmpty(req.json_data.name)
+      logger.warning("Service updateLocationName - incorrect data format %s", req.json_data)
+      return res.json { status: 2, message: "incorrect data format" }
+
+    Service.collection.findOne {_id: req.json_data.id}, (err, service) ->
+      unless service
+        logger.warning("Service updateLocationName - service not found %", req.json_data.id)
+        return res.json { status: 101, message: "service not found" }
+
+      unless _.isArray(service[req.json_data.type])
+        logger.warning("Service updateLocationName - #{req.json_data.type} not found %", req.json_data.id)
+        return res.json { status: 102, message: "#{req.json_data.type} not found" }
+
+      location = [service.location[0], service.location[1], req.json_data.name]
+      Service.collection.update({_id: req.json_data.id}, {$set:{location: location}})
+
+      res.json { status: 0 }
 
 module.exports = TaxiCallController

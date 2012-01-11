@@ -28,13 +28,11 @@ User = require('./models/user')
 Service = require('./models/service')
 Message = require('./models/message')
 Evaluation = require('./models/evaluation')
-Location = require('./models/location')
 
 User.setup(db)
 Service.setup(db)
 Message.setup(db)
 Evaluation.setup(db)
-Location.setup(db)
 ######################################################
 # controllers
 ######################################################
@@ -42,13 +40,11 @@ AuthorizationController = require('./controllers/authorization_controller')
 DriverController = require('./controllers/driver_controller')
 PassengerController = require('./controllers/passenger_controller')
 TaxiCallController = require('./controllers/taxi_call_controller')
-LocationController = require('./controllers/location_controller')
 
 authorizationController = new AuthorizationController
 driverController = new DriverController
 passengerController = new PassengerController
 taxiCallController = new TaxiCallController
-locationController = new LocationController
 
 ######################################################
 # create express
@@ -157,8 +153,5 @@ app.post '/service/evaluate',         authorizationController.restrict_to(["pass
 app.get  '/service/history',          authorizationController.restrict_to(["passenger", "driver"]),         taxiCallController.history
 app.get  '/service/evaluations',      authorizationController.restrict_to(["passenger", "driver"]),         taxiCallController.getEvaluations
 app.get  '/service/user/evaluations', authorizationController.restrict_to(["passenger", "driver"]),         taxiCallController.getUserEvaluations
+app.post '/service/location/update',  authorizationController.restrict_to("passenger"),       taxiCallController.updateLocationName
 
-######################################################
-# location routes
-######################################################
-app.post '/location/create',          authorizationController.restrict_to("user"),       locationController.create
