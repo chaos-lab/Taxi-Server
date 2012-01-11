@@ -15,7 +15,7 @@ class TaxiCallController
   getNearTaxis: (req, res) ->
     taxis = []
 
-    User.collection.find({ role:2, state:{$gte: 1}, taxi_state:1, location:{$exists: true} }).toArray (err, docs)->
+    User.collection.find({ role: "driver", state:{$gte: 1}, taxi_state:1, location:{$exists: true} }).toArray (err, docs)->
       if err
         logger.warning("Service getNearTaxis - database error")
         return res.json { status: 3, message: "database error" }
@@ -211,13 +211,14 @@ class TaxiCallController
           logger.warning("Service evaluate - you have evaluated this service %s", doc)
           return res.json { status: 103, message: "you have evaluated this service" }
 
-        target = if req.current_user.role == 1 then service.driver else service.passenger
+        target = if req.current_user.name == service.passenger then service.driver else service.passenger
+        role = if _.include(req.current_user.role, "passenger") then "passenger" else "driver"
         # create evaluation
         evaluation =
           service_id: service._id
           evaluator: req.current_user.name
           target: target
-          role: req.current_user.role
+          role: role
           score: req.json_data.score
           comment: req.json_data.comment
         Evaluation.create evaluation, (err, doc)->
@@ -246,7 +247,7 @@ class TaxiCallController
       result =  {status: 0}
       for evaluation in docs
         result[evaluation.service_id] = result[evaluation.service_id] || {}
-        if evaluation.role == 1
+        if evaluation.role == "passenger"
           result[evaluation.service_id]["passenger_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
         else
           result[evaluation.service_id]["driver_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
@@ -320,7 +321,7 @@ class TaxiCallController
 
     driver_query = {state: {$in: [-3, -2, -1, 3]}, driver: req.current_user.name, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
     passenger_query = {state: {$in: [-3, -2, -1, 3]}, passenger: req.current_user.name, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
-    query = if req.current_user.role == 1 then passenger_query else driver_query
+    query = if _.include(req.current_user.role, "passenger") then passenger_query else driver_query
 
     Service.collection.find(query, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, services)->
       if err
@@ -333,7 +334,7 @@ class TaxiCallController
       for service in services
         service_map[service._id] = service
         service_keys.push(service._id)
-        if req.current_user.role == 1
+        if _.include(req.current_user.role, "passenger")
           user_keys.push(service.driver)
         else
           user_keys.push(service.passenger)
@@ -366,7 +367,7 @@ class TaxiCallController
 
         # set detailed user info
         for service in services
-          if req.current_user.role == 1
+          if _.include(req.current_user.role, "passenger")
             delete service.passenger
             stats = if user_map[service.driver].stats then user_map[service.driver].stats else {average_score: 0, service_count: 0, evaluation_count: 0}
             service.driver =
@@ -390,7 +391,7 @@ class TaxiCallController
 
           # set evaluations
           for evaluation in evaluations
-            if evaluation.role == 1
+            if evaluation.role == "passenger"
               service_map[evaluation.service_id]["passenger_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
             else
               service_map[evaluation.service_id]["driver_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}

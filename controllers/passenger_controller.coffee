@@ -32,7 +32,7 @@ class PassengerController
         phone_number: req.json_data.phone_number
         password: req.json_data.password
         name: req.json_data.name
-        role: 1
+        role: ["user", "passenger"]
         state: 0
       User.create(data)
 
@@ -48,7 +48,7 @@ class PassengerController
       return res.json { status: 2, message: "incorrect data format" }
 
     User.collection.findOne {phone_number: req.json_data.phone_number}, (err, passenger) ->
-      unless passenger && req.json_data.password == passenger.password && passenger.role == 1
+      unless passenger && req.json_data.password == passenger.password && _.include(passenger.role, "passenger")
         logger.warning("passenger signin - incorrect credential %s", req.json_data)
         return res.json { status: 101, message: "incorrect credential" }
 

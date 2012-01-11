@@ -2,7 +2,7 @@
 mongodb = require('mongodb')
 
 # evaluation schema
-# { service_id: 34, evaluator: "liufy", target: "liuq", role: 1|2, score: 6, comment: "This is good", created_at: new Date }
+# { service_id: 34, evaluator: "liufy", target: "liuq", role: "passenger"|"driver", score: 6, comment: "This is good", created_at: new Date }
 
 module.exports = Evaluation =
   setup: (db) ->

@@ -5,8 +5,8 @@ vows   = require('vows')
 helper = require('./helper')
 querystring = require('querystring')
 
-p1 = { phone_number: "passenger1", password: "123456", name: "liufy", role: 1, state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
-d1 = { phone_number: "driver1", password: "123456", name: "cang", role: 2, state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
+p1 = { phone_number: "passenger1", password: "123456", name: "liufy", role: ["user", "passenger"], state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
+d1 = { phone_number: "driver1", password: "123456", name: "cang", role: ["user", "driver"], state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
 
 # app init
 app = require('../webserver')

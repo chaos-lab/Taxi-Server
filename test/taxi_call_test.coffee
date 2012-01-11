@@ -13,8 +13,8 @@ driver = tobi.createBrowser(app)
 # Batches  are executed sequentially.
 # Contexts are executed in parallel.
 suite = vows.describe('taxi call & cancel test')
-p1 = { phone_number: "passenger1", password: "123456", name: "liufy", role: 1, state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
-d1 = { phone_number: "driver1", password: "123456", name: "cang", role: 2, state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
+p1 = { phone_number: "passenger1", password: "123456", name: "liufy", role: ["passenger", "user"], state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
+d1 = { phone_number: "driver1", password: "123456", name: "cang", role: ["driver", "user"], state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
 
 suite.addBatch
   "setup":

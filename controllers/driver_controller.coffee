@@ -34,7 +34,7 @@ class DriverController
         password: req.json_data.password
         name: req.json_data.name
         car_number: req.json_data.car_number
-        role: 2
+        role: ["user", "driver"]
         state: 0
         taxi_state: 1
 
@@ -52,7 +52,7 @@ class DriverController
       return res.json({ status: 2, message: "incorrect data format" })
 
     User.collection.findOne {phone_number: req.json_data.phone_number}, (err, driver) ->
-      unless driver && req.json_data.password == driver.password && driver.role == 2
+      unless driver && req.json_data.password == driver.password && _.include(driver.role, "driver")
         logger.warning("driver signin - incorrect credential %s", req.json_data)
         return res.json { status: 101, message: "incorrect credential" }
 

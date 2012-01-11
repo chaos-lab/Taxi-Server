@@ -6,10 +6,10 @@ Service = require('./service')
 Evaluation = require('./evaluation')
 
 # driver schema
-# { phone_number: "13814171931", password: "123456", name: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: 1, created_at: Date, updated_at: Date, last_active_at: Date, car_number: "xxxx", taxi_state: 1, stats: {average_score: 3.6, service_count: 67, evaluation_count: 54 } }
+# { phone_number: "13814171931", password: "123456", name: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: ["user", "driver"], created_at: Date, updated_at: Date, last_active_at: Date, car_number: "xxxx", taxi_state: 1, stats: {average_score: 3.6, service_count: 67, evaluation_count: 54 } }
 
 # passenger
-# { phone_number: "13814171931", password: "123456", name: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: 2, created_at: Date, updated_at: Date, last_active_at: Date, stats: {average_score: 3.6, service_count: 67, evaluation_count: 54 } }
+# { phone_number: "13814171931", password: "123456", name: "liufy", state: 1, messages:[], location: [23.2343, 126.343], role: ["user", "passenger"], created_at: Date, updated_at: Date, last_active_at: Date, stats: {average_score: 3.6, service_count: 67, evaluation_count: 54 } }
 
 module.exports = User =
   ##

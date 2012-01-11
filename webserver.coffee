@@ -39,19 +39,16 @@ Location.setup(db)
 # controllers
 ######################################################
 AuthorizationController = require('./controllers/authorization_controller')
-authorization_controller = new AuthorizationController()
-
 DriverController = require('./controllers/driver_controller')
-driver_controller = new DriverController()
-
 PassengerController = require('./controllers/passenger_controller')
-passenger_controller = new PassengerController()
-
 TaxiCallController = require('./controllers/taxi_call_controller')
-taxi_call_controller = new TaxiCallController()
-
 LocationController = require('./controllers/location_controller')
-location_controller = new LocationController()
+
+authorizationController = new AuthorizationController
+driverController = new DriverController
+passengerController = new PassengerController
+taxiCallController = new TaxiCallController
+locationController = new LocationController
 
 ######################################################
 # create express
@@ -132,36 +129,36 @@ app.get '/', (req, res, next)->
 ######################################################
 # driver routes
 ######################################################
-app.post '/driver/signup',          driver_controller.signup
-app.post '/driver/signin',          driver_controller.signin
-app.post '/driver/signout',         authorization_controller.restrict_to_driver,   driver_controller.signout
-app.post '/driver/location/update', authorization_controller.restrict_to_driver,   driver_controller.updateLocation
-app.post '/driver/taxi/update',     authorization_controller.restrict_to_driver,   driver_controller.updateState
-app.get  '/driver/refresh',         authorization_controller.restrict_to_driver,   driver_controller.refresh
+app.post '/driver/signup',          driverController.signup
+app.post '/driver/signin',          driverController.signin
+app.post '/driver/signout',         authorizationController.restrict_to("driver"),   driverController.signout
+app.post '/driver/location/update', authorizationController.restrict_to("driver"),   driverController.updateLocation
+app.post '/driver/taxi/update',     authorizationController.restrict_to("driver"),   driverController.updateState
+app.get  '/driver/refresh',         authorizationController.restrict_to("driver"),   driverController.refresh
 
 ######################################################
 # passenger routes
 ######################################################
-app.post '/passenger/signup',           passenger_controller.signup
-app.post '/passenger/signin',           passenger_controller.signin
-app.post '/passenger/signout',          authorization_controller.restrict_to_passenger,   passenger_controller.signout
-app.post '/passenger/location/update',  authorization_controller.restrict_to_passenger,   passenger_controller.updateLocation
-app.get  '/passenger/refresh',          authorization_controller.restrict_to_passenger,   passenger_controller.refresh
+app.post '/passenger/signup',           passengerController.signup
+app.post '/passenger/signin',           passengerController.signin
+app.post '/passenger/signout',          authorizationController.restrict_to("passenger"),   passengerController.signout
+app.post '/passenger/location/update',  authorizationController.restrict_to("passenger"),   passengerController.updateLocation
+app.get  '/passenger/refresh',          authorizationController.restrict_to("passenger"),   passengerController.refresh
 
 ######################################################
 # taxi call routes
 ######################################################
-app.get  '/taxi/near',                authorization_controller.restrict_to_passenger,    taxi_call_controller.getNearTaxis
-app.post '/service/create',           authorization_controller.restrict_to_passenger,    taxi_call_controller.create
-app.post '/service/reply',            authorization_controller.restrict_to_driver,       taxi_call_controller.reply
-app.post '/service/cancel',           authorization_controller.restrict_to_passenger,    taxi_call_controller.cancel
-app.post '/service/complete',         authorization_controller.restrict_to_driver,       taxi_call_controller.complete
-app.post '/service/evaluate',         authorization_controller.restrict_to_user,         taxi_call_controller.evaluate
-app.get  '/service/history',          authorization_controller.restrict_to_user,         taxi_call_controller.history
-app.get  '/service/evaluations',      authorization_controller.restrict_to_user,         taxi_call_controller.getEvaluations
-app.get  '/service/user/evaluations', authorization_controller.restrict_to_user,         taxi_call_controller.getUserEvaluations
+app.get  '/taxi/near',                authorizationController.restrict_to("passenger"),    taxiCallController.getNearTaxis
+app.post '/service/create',           authorizationController.restrict_to("passenger"),    taxiCallController.create
+app.post '/service/reply',            authorizationController.restrict_to("driver"),       taxiCallController.reply
+app.post '/service/cancel',           authorizationController.restrict_to("passenger"),    taxiCallController.cancel
+app.post '/service/complete',         authorizationController.restrict_to("driver"),       taxiCallController.complete
+app.post '/service/evaluate',         authorizationController.restrict_to(["passenger", "driver"]),         taxiCallController.evaluate
+app.get  '/service/history',          authorizationController.restrict_to(["passenger", "driver"]),         taxiCallController.history
+app.get  '/service/evaluations',      authorizationController.restrict_to(["passenger", "driver"]),         taxiCallController.getEvaluations
+app.get  '/service/user/evaluations', authorizationController.restrict_to(["passenger", "driver"]),         taxiCallController.getUserEvaluations
 
 ######################################################
 # location routes
 ######################################################
-app.post '/location/create',          authorization_controller.restrict_to_user,       location_controller.create
+app.post '/location/create',          authorizationController.restrict_to("user"),       locationController.create
