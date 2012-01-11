@@ -99,27 +99,9 @@ class TaxiCallController
       logger.warning("Service reply - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
-      # service doesn't exist, already cancelled, etc
-      unless doc && doc.state == 1
-        logger.warning("Service reply - service can't be replied %s", doc)
-        return res.json { status: 101, message: "service can't be replied" }
-
-      state = if req.json_data.accept then 2 else -1
-      Service.collection.update({_id: req.json_data.id}, {$set: {state: state, updated_at: new Date()}})
-      # set taxi state to running
-      User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 2}}) if req.json_data.accept
-
-      message =
-        receiver: doc.passenger
-        type: "call-taxi-reply"
-        accept: req.json_data.accept
-        id: doc._id
-        key: doc.key
-        timestamp: new Date().valueOf()
-      Message.collection.update({receiver: message.receiver, key:message.key, type: message.type}, message, {upsert: true})
-
-      res.json { status: 0 }
+    req.json_data.actor = req.current_user
+    Service.reply req.json_data, (result)->
+      res.json result
 
   ##
   # passenger cancel a taxi call
@@ -131,25 +113,8 @@ class TaxiCallController
 
     query = if req.json_data.id then {_id: req.json_data.id} else {key: req.json_data.key, passenger: req.current_user.name}
 
-    Service.collection.findOne query, (err, doc) ->
-      # can't cancel completed service or rejected service
-      if !doc || (doc.state != 2 && doc.state != 1)
-        logger.warning("Service reply - service can't be cancelled %s", doc)
-        return res.json { status: 101, message: "service can't be cancelled" }
-
-      # update service state
-      Service.collection.update({_id: doc._id}, {$set: {state: -2, updated_at: new Date()}})
-      # remove call-taxi message if it's not sent
-      Message.collection.remove({receiver: doc.driver, id: doc._id, type: "call-taxi"})
-
-      message =
-        receiver: doc.driver
-        type: "call-taxi-cancel"
-        id: doc._id
-        timestamp: new Date().valueOf()
-      Message.collection.update({receiver: message.receiver, id:message.id, type: message.type}, message, {upsert: true})
-
-      res.json { status: 0 }
+    Service.cancel query, req.current_user, (result) ->
+      res.json result
 
   ##
   # driver notify the completion of a service
@@ -159,26 +124,9 @@ class TaxiCallController
       logger.warning("Service complete - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    Service.collection.findOne {_id: req.json_data.id}, (err, doc) ->
-      # can only complete accepted service
-      unless doc && doc.state == 2
-        logger.warning("Service complete - service can't be completed %s", doc)
-        return res.json { status: 101, message: "only accepted service can be completed" }
-
-      Service.collection.update({_id: doc._id}, {$set: {state: 3, updated_at: new Date()}})
-      # set taxi state to idle
-      User.collection.update({_id: req.current_user._id}, {$set: {taxi_state: 1}, $inc:{"stats.service_count": 1}})
-      User.collection.update({name: doc.passenger}, {$inc:{"stats.service_count": 1}})
-
-      message =
-        receiver: doc.passenger
-        type: "call-taxi-complete"
-        id: doc._id
-        key: doc.key
-        timestamp: new Date().valueOf()
-      Message.collection.update({receiver: message.receiver, key:message.key, type: message.type}, message, {upsert: true})
-
-      res.json { status: 0 }
+    req.json_data.actor = req.current_user
+    Service.complete req.json_data, (result) ->
+      res.json result
 
   ##
   # evaluate a service
@@ -192,7 +140,7 @@ class TaxiCallController
     req.json_data.role = if _.include(req.current_user.role, "passenger") then "passenger" else "driver"
     req.json_data.evaluator = req.current_user.name
     Evaluation.create req.json_data, (result)->
-        res.json result
+      res.json result
 
   ##
   # get evaluations of specified services

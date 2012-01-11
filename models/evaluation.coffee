@@ -5,6 +5,9 @@ mongodb = require('mongodb')
 # { service_id: 34, evaluator: "liufy", target: "liuq", role: "passenger"|"driver", score: 6, comment: "This is good", created_at: new Date }
 
 module.exports = Evaluation =
+  ##
+  # setup db & index
+  ##
   setup: (db) ->
     this.collection = new mongodb.Collection(db, 'evaluations')
     this.collection.ensureIndex {target: 1}, (err, name)->
@@ -12,6 +15,9 @@ module.exports = Evaluation =
     this.collection.ensureIndex {service_id: 1}, (err, name)->
     this.collection.ensureIndex {created_at: 1}, (err, name)->
 
+  ##
+  # create an evaluation
+  ##
   create: (json, fn) ->
     Service.collection.findOne {_id: json.id}, (err, service) =>
       unless service
@@ -51,6 +57,9 @@ module.exports = Evaluation =
 
         fn { status: 0 } if fn
 
+  ##
+  # search evaluations
+  ##
   search: (query, options, fn)->
     Evaluation.collection.find(query, options).toArray (err, docs)->
       if err

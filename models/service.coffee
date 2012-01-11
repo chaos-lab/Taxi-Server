@@ -5,6 +5,9 @@ mongodb = require('mongodb')
 # { id: 4534, state: 1, driver: "liuq", passenger: "souriki", origin:[23.454, 132.54554, "location1"], destination:[23.454, 132.54554, "location2"], created_at: Date, updated_at: Date }
 
 module.exports = Service =
+  ##
+  # setup db & index
+  ##
   setup: (db) ->
     this.counters = new mongodb.Collection(db, 'counters')
     this.collection = new mongodb.Collection(db, 'services')
@@ -12,6 +15,9 @@ module.exports = Service =
     this.collection.ensureIndex {passenger: 1}, (err, name)->
     this.collection.ensureIndex {key: 1}, (err, name)->
 
+  ##
+  # create instance & store in db
+  ##
   create: (json, fn) ->
     json.created_at = new Date
     json.updated_at = new Date
@@ -20,6 +26,9 @@ module.exports = Service =
       doc = if docs then docs[0] else null
       fn(err, doc) if fn
 
+  ##
+  # generate unique id
+  ##
   uniqueID: (fn) ->
     query = { _id: 'services' }
     sort = [['_id','asc']]
@@ -29,6 +38,103 @@ module.exports = Service =
     this.counters.findAndModify query, sort, update, options, (err, doc)->
       fn(doc.next)
 
+  ##
+  # reply a taxi call
+  ##
+  reply: (json, fn)->
+    Service.collection.findOne {_id: json.id}, (err, doc) ->
+      # service doesn't exist, already cancelled, etc
+      unless doc && doc.state == 1
+        logger.warning("Service reply - service can't be replied %s", doc)
+        fn { status: 101, message: "service can't be replied" } if fn
+        return
+
+      if doc.driver!= json.actor.name
+        logger.warning("Service reply- can't reply other's service %s %s", json.actor, doc)
+        fn { status: 102, message: "can't reply other's service" } if fn
+        return
+
+      state = if json.accept then 2 else -1
+      Service.collection.update({_id: json.id}, {$set: {state: state, updated_at: new Date()}})
+      # set taxi state to running
+      User.collection.update({name: json.actor.name}, {$set: {taxi_state: 2}}) if json.accept
+
+      message =
+        receiver: doc.passenger
+        type: "call-taxi-reply"
+        accept: json.accept
+        id: doc._id
+        key: doc.key
+        timestamp: new Date().valueOf()
+      Message.collection.update({receiver: message.receiver, key:message.key, type: message.type}, message, {upsert: true})
+
+      fn { status: 0 } if fn
+
+  ##
+  # cancel a taxi call
+  ##
+  cancel: (query, actor, fn)->
+    Service.collection.findOne query, (err, doc) ->
+      # can't cancel completed service or rejected service
+      if !doc || (doc.state != 2 && doc.state != 1)
+        logger.warning("Service cancel - service can't be cancelled %s", doc)
+        fn { status: 101, message: "service can't be cancelled" } if fn
+        return
+
+      if doc.passenger != actor.name
+        logger.warning("Service cancel - can't cancel other's service %s %s", actor, doc)
+        fn { status: 102, message: "can't cancel other's service" } if fn
+        return
+
+      # update service state
+      Service.collection.update({_id: doc._id}, {$set: {state: -2, updated_at: new Date()}})
+      # remove call-taxi message if it's not sent
+      Message.collection.remove({receiver: doc.driver, id: doc._id, type: "call-taxi"})
+
+      message =
+        receiver: doc.driver
+        type: "call-taxi-cancel"
+        id: doc._id
+        timestamp: new Date().valueOf()
+      Message.collection.update({receiver: message.receiver, id:message.id, type: message.type}, message, {upsert: true})
+
+      fn { status: 0 } if fn
+
+  ##
+  # complete a taxi call
+  ##
+  complete: (json, fn)->
+    Service.collection.findOne {_id: json.id}, (err, doc) ->
+      # can only complete accepted service
+      unless doc && doc.state == 2
+        logger.warning("Service complete - service can't be completed %s", doc)
+        fn { status: 101, message: "only accepted service can be completed" } if fn
+        return
+
+      if doc.driver != json.actor.name
+        logger.warning("Service complete - can't complete other's service %s %s", json.actor, doc)
+        fn { status: 102, message: "can't complete other's service" } if fn
+        return
+
+      Service.collection.update({_id: doc._id}, {$set: {state: 3, updated_at: new Date()}})
+      # set taxi state to idle
+      User.collection.update({name: doc.driver}, {$set: {taxi_state: 1}, $inc:{"stats.service_count": 1}})
+      User.collection.update({name: doc.passenger}, {$inc:{"stats.service_count": 1}})
+
+      message =
+        receiver: doc.passenger
+        type: "call-taxi-complete"
+        id: doc._id
+        key: doc.key
+        timestamp: new Date().valueOf()
+      Message.collection.update({receiver: message.receiver, key:message.key, type: message.type}, message, {upsert: true})
+
+      fn { status: 0 } if fn
+
+
+  ##
+  # search service
+  ##
   search: (query, options, fn)->
     Service.collection.find(query, options).toArray (err, services)->
       if err
