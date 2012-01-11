@@ -189,39 +189,10 @@ class TaxiCallController
       logger.warning("Service evaluate - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    Service.collection.findOne {_id: req.json_data.id}, (err, service) ->
-      unless service
-        logger.warning("Service evaluate - service not found %", req.json_data.id)
-        return res.json { status: 104, message: "service not found" }
-
-      # can only evaluate completed service
-      unless service.state == 3
-        logger.warning("Service evaluate - service can't be evaluated %s", service)
-        return res.json { status: 101, message: "only completed service can be evaluated" }
-
-      unless service.driver == req.current_user.name || service.passenger == req.current_user.name
-        logger.warning("Service evaluate - you can't evaluate this service. %s", service)
-        return res.json { status: 102, message: "you can't evaluate this service" }
-
-      Evaluation.collection.findOne {service_id: req.json_data.id, "evaluator": req.current_user.name}, (err, doc) ->
-        if doc
-          logger.warning("Service evaluate - you have evaluated this service %s", doc)
-          return res.json { status: 103, message: "you have evaluated this service" }
-
-        target = if req.current_user.name == service.passenger then service.driver else service.passenger
-        role = if _.include(req.current_user.role, "passenger") then "passenger" else "driver"
-        # create evaluation
-        evaluation =
-          service_id: service._id
-          evaluator: req.current_user.name
-          target: target
-          role: role
-          score: req.json_data.score
-          comment: req.json_data.comment
-        Evaluation.create evaluation, (err, doc)->
-          User.updateStats(target)
-
-        res.json { status: 0 }
+    req.json_data.role = if _.include(req.current_user.role, "passenger") then "passenger" else "driver"
+    req.json_data.evaluator = req.current_user.name
+    Evaluation.create req.json_data, (result)->
+        res.json result
 
   ##
   # get evaluations of specified services
@@ -270,37 +241,11 @@ class TaxiCallController
         return res.json { status: 3, message: "database error" }
 
       if !user
-        logger.warning("driver signin - database error")
+        logger.warning("getUserEvaluations - database error")
         return res.json { status: 101, message: "database error" }
 
-      Evaluation.collection.find({created_at: {$lte: new Date(req.json_data.end_time)}, "target":user.name}, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, docs)->
-        if err
-          logger.error("Service getUserEvaluations - database error")
-          return res.json { status: 3, message: "database error" }
-
-        evals = []
-        keys = []
-        for evaluation in docs
-          keys.push evaluation.evaluator
-          evals.push
-            score: evaluation.score
-            comment: evaluation.comment
-            created_at: evaluation.created_at.valueOf()
-            evaluator: evaluation.evaluator
-
-        # set evaluator name. mongodb doesn't support join
-        User.collection.find({name: {$in: keys}}).toArray (err, docs)->
-          if err
-            logger.error("Service getUserEvaluations - database error")
-            return res.json { status: 3, message: "database error" }
-
-          evaluators = {}
-          evaluators[evaluator.name] = evaluator for evaluator in docs
-
-          # set evaluator to name
-          evaluation.evaluator = evaluators[evaluation.evaluator].name for evaluation in evals
-
-          return res.json { status: 0, evaluations: evals}
+      Evaluation.search {created_at: {$lte: new Date(req.json_data.end_time)}, "target":user.name}, {limit: req.json_data.count, sort:[['created_at', 'desc']]}, (result)->
+        return res.json result
 
   ##
   # get history of services related to current user
