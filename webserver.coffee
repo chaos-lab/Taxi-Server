@@ -3,6 +3,7 @@ mongodb = require('mongodb')
 mongoStore = require('connect-mongodb')
 Logger = require('log')
 fs = require('fs')
+global._ = require('underscore')
 
 ######################################################
 # logger modification to support object params
@@ -24,10 +25,10 @@ db = new mongodb.Db(config.database.db, new mongodb.Server(config.database.host,
 ######################################################
 # initiate models
 ######################################################
-User = require('./models/user')
-Service = require('./models/service')
-Message = require('./models/message')
-Evaluation = require('./models/evaluation')
+global.User = require('./models/user')
+global.Service = require('./models/service')
+global.Message = require('./models/message')
+global.Evaluation = require('./models/evaluation')
 
 User.setup(db)
 Service.setup(db)

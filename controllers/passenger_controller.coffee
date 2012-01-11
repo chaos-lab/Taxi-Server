@@ -1,10 +1,5 @@
 # controllers for passenger
 
-User = require('../models/user')
-Service = require('../models/service')
-Message = require('../models/message')
-_ = require('underscore')
-
 class PassengerController
 
   constructor: ->

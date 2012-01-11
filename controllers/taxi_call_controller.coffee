@@ -1,11 +1,5 @@
 # taxi call controller
 
-User = require('../models/user')
-Service = require('../models/service')
-Message = require('../models/message')
-Evaluation = require('../models/evaluation')
-_ = require('underscore')
-
 class TaxiCallController
   constructor: ->
 
@@ -326,80 +320,12 @@ class TaxiCallController
     passenger_query = {state: {$in: [-3, -2, -1, 3]}, passenger: req.current_user.name, created_at:{$lte: new Date(req.json_data.end_time), $gte: new Date(req.json_data.start_time)}}
     query = if _.include(req.current_user.role, "passenger") then passenger_query else driver_query
 
-    Service.collection.find(query, {limit: req.json_data.count, sort:[['created_at', 'desc']]}).toArray (err, services)->
-      if err
-        logger.warning("Service history - database error")
-        return res.json { status: 3, message: "database error" }
-
-      service_map = {}
-      service_keys = []
-      user_keys = []
-      for service in services
-        service_map[service._id] = service
-        service_keys.push(service._id)
-        if _.include(req.current_user.role, "passenger")
-          user_keys.push(service.driver)
-        else
-          user_keys.push(service.passenger)
-
-        service.id = service._id
-        delete service._id
-
-        service.created_at = service.created_at.valueOf()
-        service.updated_at = service.updated_at.valueOf()
-
-        service.origin =
-          longitude: service.origin[0]
-          latitude: service.origin[1]
-          name: service.origin[2]
-
-        if service.destination
-          service.destination =
-            longitude: service.destination[0]
-            latitude: service.destination[1]
-            name: service.destination[2]
-
-      # load details user info
-      User.collection.find({name: {$in: user_keys}}).toArray (err, users)->
-        if err
-          logger.error("Service getUserEvaluations - database error")
-          return res.json { status: 3, message: "database error" }
-
-        user_map = {}
-        user_map[user.name] = user for user in users
-
-        # set detailed user info
-        for service in services
-          if _.include(req.current_user.role, "passenger")
-            delete service.passenger
-            stats = if user_map[service.driver].stats then user_map[service.driver].stats else {average_score: 0, service_count: 0, evaluation_count: 0}
-            service.driver =
-              phone_number: user_map[service.driver].phone_number
-              name: service.driver
-              car_number: user_map[service.driver].car_number
-              stats: stats
-          else
-            delete service.driver
-            stats = if user_map[service.passenger].stats then user_map[service.passenger].stats else {average_score: 0, service_count: 0, evaluation_count: 0}
-            service.passenger =
-              phone_number: user_map[service.passenger].phone_number
-              name: service.passenger
-              stats: stats
-
-        # load evaluations
-        Evaluation.collection.find({service_id:{$in: service_keys}}).toArray (err, evaluations)->
-          if err
-            logger.error("Service getEvaluations - database error")
-            return res.json { status: 3, message: "database error" }
-
-          # set evaluations
-          for evaluation in evaluations
-            if evaluation.role == "passenger"
-              service_map[evaluation.service_id]["passenger_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
-            else
-              service_map[evaluation.service_id]["driver_evaluation"] = {score: evaluation.score, comment: evaluation.comment, created_at: evaluation.created_at.valueOf()}
-
-          res.json { status: 0, services: services }
+    Service.search query, {limit: req.json_data.count, sort:[['created_at', 'desc']]}, (result)->
+      if _.include(req.current_user.role, "passenger")
+        delete service.passenger for service in result.services
+      else
+        delete service.driver for service in result.services
+      res.json result
 
   ##
   # update location physical name

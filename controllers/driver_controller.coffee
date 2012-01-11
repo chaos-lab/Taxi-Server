@@ -1,10 +1,5 @@
 # controllers for driver
 
-User = require('../models/user')
-Service = require('../models/service')
-Message = require('../models/message')
-_ = require('underscore')
-
 class DriverController
 
   constructor: ->
