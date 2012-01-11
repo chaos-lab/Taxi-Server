@@ -25,6 +25,39 @@ module.exports = User =
     this.collection.ensureIndex {role: 1}, (err, name)->
 
   ##
+  # sign up - create new user
+  ##
+  signup: (json, fn)->
+    User.collection.findOne {$or: [{phone_number: json.phone_number}, {name: json.name}]}, (err, doc) ->
+      if doc
+        if doc.phone_number == json.phone_number
+          logger.warning("driver signup - phone_number already registered: %s", json)
+          fn { status: 101, message: "phone_number already registered" } if fn
+        else
+          logger.warning("signup - name is already taken: %s", json)
+          fn { status: 102, message: "name is already taken" } if fn
+        return
+
+      User.create json, (err, doc)->
+        if err
+          fn { status: 3, message: "db error" } if fn
+        else
+          fn { status: 0 } if fn
+
+  ##
+  # sign in - check password
+  ##
+  signin: (json, fn)->
+    User.collection.findOne {phone_number: json.phone_number}, (err, user) ->
+      # SHA1 hash
+      unless user && json.password == user.password
+        logger.warning("signin - incorrect credential %s", json)
+        fn(null) if fn
+        return
+
+      fn(user) if fn
+
+  ##
   # create a new user
   ##
   create: (json, fn) ->

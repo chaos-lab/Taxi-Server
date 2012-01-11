@@ -19,24 +19,15 @@ class PassengerController
       logger.warning("passenger signup - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    User.collection.findOne {$or: [{phone_number: req.json_data.phone_number}, {name: req.json_data.name}]}, (err, doc) ->
-      if doc
-        if doc.phone_number == req.json_data.phone_number
-          logger.warning("driver signup - phone_number already registered: %s", req.json_data)
-          return res.json { status: 101, message: "phone_number already registered" }
-        else
-          logger.warning("driver signup - name is already taken: %s", req.json_data)
-          return res.json { status: 102, message: "name is already taken" }
+    data =
+      phone_number: req.json_data.phone_number
+      password: req.json_data.password
+      name: req.json_data.name
+      role: ["user", "passenger"]
+      state: 0
 
-      data =
-        phone_number: req.json_data.phone_number
-        password: req.json_data.password
-        name: req.json_data.name
-        role: ["user", "passenger"]
-        state: 0
-      User.create(data)
-
-      res.json { status: 0 }
+    User.signup data, (result)->
+      res.json result
   
   ##
   # passenger signin
@@ -47,7 +38,7 @@ class PassengerController
       logger.warning("passenger signin - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
-    User.collection.findOne {phone_number: req.json_data.phone_number}, (err, passenger) ->
+    User.signin req.json_data, (passenger)->
       unless passenger && req.json_data.password == passenger.password && _.include(passenger.role, "passenger")
         logger.warning("passenger signin - incorrect credential %s", req.json_data)
         return res.json { status: 101, message: "incorrect credential" }
@@ -93,6 +84,7 @@ class PassengerController
   ##
   updateLocation: (req, res) ->
     unless req.json_data && _.isNumber(req.json_data.latitude) && _.isNumber(req.json_data.longitude)
+      logger.warning("passenger updateLocation - incorrect data format %s", req.json_data)
       return res.json { status: 2, message: "incorrect data format" }
 
     loc = [req.json_data.longitude, req.json_data.latitude]
