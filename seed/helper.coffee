@@ -6,10 +6,7 @@ mongodb = require('mongodb')
 module.exports = helper =
   createUser: (db, json, fn) ->
     users = new mongodb.Collection(db, 'users')
-    users.findOne {$or:[{phone_number: json.phone_number}, {nickname: json.nickname}]}, (err, doc)->
-      return fn() if doc
-
-      users.insert json, (err, docs)->
+    users.update {$or:[{phone_number: json.phone_number}, {name: json.name}]}, json, {upsert: true}, (err, doc)->
         fn()
 
   signin_passenger: (browser, json, fn)->

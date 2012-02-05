@@ -5,8 +5,8 @@ vows   = require('vows')
 helper = require('./helper')
 querystring = require('querystring')
 
-p1 = { phone_number: "13913391280", password: "123", nickname: "souriki", role: ["passenger", "user"], state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
-d1 = { phone_number: "13851403984", password: "123", nickname: "liuq", role: ["driver", "user"], state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
+p1 = { phone_number: "13913391280", password: "123", name: "souriki", role: ["passenger", "user"], state: 2, location:{ latitude: 118.2342, longitude: 32.43432 } }
+d1 = { phone_number: "13851403984", password: "123", name: "liuq", role: ["driver", "user"], state: 2, car_number: "ABCD", taxi_state: 1, location:{ latitude: 118.2342, longitude: 32.43432 } }
 
 # app init
 app = require('../webserver')
@@ -47,7 +47,7 @@ suite.addBatch
 suite.addBatch
   "should be able for passenger to send taxi call":
     topic: ->
-      data = { origin: { latitude: 118.2342, longitude: 32.43432 }, driver: d1.phone_number,  key: new Date().valueOf() }
+      data = { origin: { latitude: 118.2342, longitude: 32.43432 }, driver: d1.name,  key: new Date().valueOf() }
       data = JSON.stringify(data)
       passenger.post '/service/create', { body: 'json_data=' + data}, this.callback
       return
@@ -96,56 +96,6 @@ suite.addBatch
       assert.equal res.body.messages[0].id, driver.service_id
       assert.equal res.body.messages[0].type, "call-taxi-reply"
       assert.equal res.body.messages[0].accept, true
-
-suite.addBatch
-  'should be able for passenger to update location':
-    topic: (res, $)->
-      data = { latitude: 34.545, longitude: 118.324 }
-      data = JSON.stringify(data)
-      passenger.post '/passenger/location/update', { body: 'json_data=' + data }, this.callback
-      return
-
-    'should succeed': (res, $) ->
-      res.should.have.status(200)
-      assert.equal(res.body.status, 0)
-
-suite.addBatch
-  'should be able for driver to receive location update':
-    topic: (res, $)->
-      driver.get '/driver/refresh', {}, this.callback
-      return
-      
-    'should succeed': (res, $) ->
-      res.should.have.status(200)
-      assert.equal(res.body.status, 0)
-      assert.isTrue res.body.messages.length > 0
-      assert.equal res.body.messages[0].type, "location-update"
-      assert.equal res.body.messages[0].phone_number, p1.phone_number
-
-suite.addBatch
-  'should be able for driver to update location':
-    topic: (res, $)->
-      data = { latitude: 34.545, longitude: 118.324 }
-      data = JSON.stringify(data)
-      driver.post '/driver/location/update', { body: 'json_data=' + data }, this.callback
-      return
-
-    'should succeed': (res, $) ->
-      res.should.have.status(200)
-      assert.equal(res.body.status, 0)
-
-suite.addBatch
-  'should be able for passenger to receive location update':
-    topic: (res, $)->
-      passenger.get '/passenger/refresh', {}, this.callback
-      return
-      
-    'should succeed': (res, $) ->
-      res.should.have.status(200)
-      assert.equal(res.body.status, 0)
-      assert.isTrue res.body.messages.length > 0
-      assert.equal res.body.messages[0].type, "location-update"
-      assert.equal res.body.messages[0].phone_number, d1.phone_number
 
 suite.addBatch
   'should be able for driver to complete taxi call':
@@ -203,7 +153,7 @@ suite.addBatch
 suite.addBatch
   'should be able for driver to get evaluations about passenger':
     topic: (res, $)->
-      data = {phone_number: p1.phone_number, end_time: new Date().valueOf()}
+      data = {name: p1.name, end_time: new Date().valueOf()}
       data = JSON.stringify(data)
       driver.get '/service/user/evaluations?' + querystring.stringify({json_data: data}), this.callback
       return
@@ -212,12 +162,12 @@ suite.addBatch
       res.should.have.status(200)
       assert.equal(res.body.status, 0)
       assert.isNotNull(res.body.evaluations)
-      assert.equal(res.body.evaluations[0].evaluator, d1.nickname)
+      assert.equal(res.body.evaluations[0].evaluator, d1.name)
 
 suite.addBatch
   'should be able for passenger to get evaluations about driver':
     topic: (res, $)->
-      data = {phone_number: d1.phone_number, end_time: new Date().valueOf()}
+      data = {name: d1.name, end_time: new Date().valueOf()}
       data = JSON.stringify(data)
       driver.get '/service/user/evaluations?' + querystring.stringify({json_data: data}), this.callback
       return
@@ -226,7 +176,7 @@ suite.addBatch
       res.should.have.status(200)
       assert.equal(res.body.status, 0)
       assert.isNotNull(res.body.evaluations)
-      assert.equal(res.body.evaluations[0].evaluator, p1.nickname)
+      assert.equal(res.body.evaluations[0].evaluator, p1.name)
 
 suite.export(module)
 
